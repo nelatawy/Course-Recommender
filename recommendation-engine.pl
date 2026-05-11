@@ -29,6 +29,10 @@
 % ---- To Test Cycles ----
 % prereq('AI', 'Intro').
 
+
+
+% Useful to generate some order to take the courses so that a course is taken after all it's dependencies
+% and if it's impossible returns false
 topo_sort(Ordered) :- 
     courses(Courses),
     foldl(dfs([]), Courses, [], ReverseOrdered),
@@ -52,3 +56,37 @@ rev_helper([], Acc, Acc).
 
 rev_helper([H|T], Acc, Result) :-
     rev_helper(T, [H|Acc], Result).
+
+% Recommending based on info
+% we need to first assign courses to categories
+% assert(in_group(Course, Group))
+
+% and then add then assert the taken courses
+% assert(taken(Course))
+
+% and finally assert the preferred groups
+% assert(preferred(Group))
+
+prereqs_satisfied(Course):-
+    findall(X, prereq(X, Course), Prerequisites),
+    forall(
+        (
+            member(P, Prerequisites) 
+            % generates a member then intentionally fires a false to backtrack and get the next member
+        ),  taken(P)
+    ).
+
+
+recommend(Course):-
+    prereqs_satisfied(Course),
+    in_group(Course, Group),
+    preferred(Group).
+
+% after exhausting all choices (dfs paths from the first clause)
+
+recommend(Course):-
+    prereqs_satisfied(Course),
+    in_group(Course, Group),
+    \+preferred(Group).
+% then start recommending the non preferred
+
