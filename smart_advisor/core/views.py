@@ -1,11 +1,13 @@
 from django.http import JsonResponse
 from .models import Student, Course, StudyPlan
 from .architecture import (
-    AIEngineAdapter, 
     PrologAdapter, 
-    FunctionalRanking, 
-    HybridPrologEngine, 
+    FunctionalRanking,
     CurriculumCycleError
+)
+from .student_advisor_strategy import (
+    AIEngineAdapter,
+    HybridPrologEngine
 )
 
 def _execute_plan(student, all_courses, engine: 'MasterAdvisorStrategy', engine_name: str):
