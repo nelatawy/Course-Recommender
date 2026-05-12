@@ -1,15 +1,14 @@
 from core.student_advisor_strategy.master_advisor_strategy import MasterAdvisorStrategy
 
 import json
-import google.generativeai as genai
+from google import genai
 from django.conf import settings
 
 
 class AIEngineAdapter(MasterAdvisorStrategy):
 
     def generate_plan(self, student, all_courses):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
         # Build context strings from Django model data
         completed_names = [c.name for c in student.completed_courses.all()]
@@ -18,7 +17,6 @@ class AIEngineAdapter(MasterAdvisorStrategy):
             {
                 "name": c.name,
                 "level": c.level,
-                "credits": c.credits,
                 "department": c.course_department,
                 "prerequisites": [p.name for p in c.prerequisites.all()]
             }
@@ -51,7 +49,10 @@ Example: ["Data Structures", "Algorithms", "AI"]
 """
 
         # Calling Gemini and parse the response
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash-lite',
+            contents=prompt,
+        )
         raw_text = response.text.strip()
 
         if raw_text.startswith("```"):

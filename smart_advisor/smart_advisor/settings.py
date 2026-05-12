@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from a .env file located at BASE_DIR / '.env'
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -122,5 +127,5 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Gemini AI API Key
-GEMINI_API_KEY = 'AIzaSyDI8sOPXAYYOUe60-EodIq5wBJlpC6bUl0'
+# Gemini AI API Key (Loaded securely from .env file so it never leaks to GitHub)
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
