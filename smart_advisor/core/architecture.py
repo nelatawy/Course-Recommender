@@ -27,15 +27,15 @@ class LogicEngineInterface(ABC):
     def get_bestfit_course(self, student) -> list: pass
 
 class PrologAdapter(LogicEngineInterface):
-   # _instance = None
+    _instance = None
     """Initialize a new prolog thread using pyswip"""
 
     def __enter__(self):
         if Prolog is None:
             raise RuntimeError("Prolog is not installed. Cannot use PrologAdapter.")
-       # if PrologAdapter._instance is None:
-        PrologAdapter._instance = Prolog()
-        PrologAdapter._instance.consult(str(Path(__file__).parent.parent.parent / "recommendation-engine.pl"))
+        if PrologAdapter._instance is None:
+            PrologAdapter._instance = Prolog()
+            PrologAdapter._instance.consult(str(Path(__file__).parent.parent.parent / "recommendation-engine.pl"))
         self.prolog_thread = PrologAdapter._instance
         return self
 
@@ -67,11 +67,11 @@ class PrologAdapter(LogicEngineInterface):
         self.prolog_thread.assertz(f"student_pref_diff({student.DIFFICULTY_TO_PROLOG[student.preferred_difficulty]})")
         for course in student.completed_courses.all():
             self.prolog_thread.assertz(f"taken('{course.name.lower()}')")
-            print(f"asserting taken: {course.name.lower()}")
+            #print(f"asserting taken: {course.name.lower()}")
         for preference in student.preferred_subjects:
             self.prolog_thread.assertz(f"preferred('{preference.lower()}')")
         results=list(self.prolog_thread.query("recommend(Course, Level)"))
-        print(results)
+        #print(results)
         course_names=[]
         for result in results:
             course_names.append(result["Course"])
