@@ -138,3 +138,9 @@ export async function getAIRecommendations(studentId: string | number) {
     method: "GET",
   });
 }
+
+export async function getAINextCourse(studentId: string | number) {
+  return fetchApi(`/recommend/ai/${studentId}/next/`, {
+    method: "GET",
+  });
+}

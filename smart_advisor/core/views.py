@@ -56,3 +56,35 @@ def get_ai_recommendations(request, student_id):
             {"status": "error", "message": f"{type(e).__name__}: {str(e)}"},
             status=500,
         )
+
+def get_ai_next_course(request, student_id):
+    """Return the single best next course with a reason."""
+    try:
+        student = Student.objects.get(id=student_id)
+        all_courses = Course.objects.all()
+
+        ai_engine = AIEngineAdapter()
+        result = ai_engine.generate_next_course(student, all_courses)
+
+        if result is None:
+            return JsonResponse({
+                "status": "success",
+                "next_course": None,
+                "message": "No available courses to recommend.",
+            })
+
+        return JsonResponse({
+            "status": "success",
+            "next_course": result["course"],
+            "reason": result["reason"],
+        })
+
+    except Student.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Student not found"}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {"status": "error", "message": f"{type(e).__name__}: {str(e)}"},
+            status=500,
+        )

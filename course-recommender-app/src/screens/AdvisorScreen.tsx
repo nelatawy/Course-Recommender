@@ -39,6 +39,10 @@ export function AdvisorScreen() {
   const [loadingRecs, setLoadingRecs] = useState(false);
   const [recError, setRecError] = useState<string | null>(null);
 
+  const [nextCourse, setNextCourse] = useState<{ course: string; reason: string } | null>(null);
+  const [loadingNext, setLoadingNext] = useState(false);
+  const [nextError, setNextError] = useState<string | null>(null);
+
   const currentDiff = student?.preferred_difficulty
     ? (BACKEND_TO_FRONTEND[student.preferred_difficulty as unknown as string] || student.preferred_difficulty)
     : "Medium";
@@ -99,6 +103,29 @@ export function AdvisorScreen() {
       setRecError("Network error. Please try again.");
     } finally {
       setLoadingRecs(false);
+    }
+  };
+
+  const fetchNextCourse = async () => {
+    if (!student) return;
+    setLoadingNext(true);
+    setNextError(null);
+    try {
+      const res = await api.getAINextCourse(student.id);
+      if (res.status === "success") {
+        if (res.next_course) {
+          setNextCourse({ course: res.next_course, reason: res.reason });
+        } else {
+          setNextCourse(null);
+          setNextError(res.message || "No courses available.");
+        }
+      } else {
+        setNextError(res.message || "Failed to get recommendation.");
+      }
+    } catch (err) {
+      setNextError("Network error. Please try again.");
+    } finally {
+      setLoadingNext(false);
     }
   };
 
@@ -170,7 +197,12 @@ export function AdvisorScreen() {
           </Pressable>
         </View>
 
-        <View style={[styles.content, activeMode === "Suggested" && aiRecs.length > 0 ? { alignItems: "stretch", justifyContent: "flex-start" } : {}]}>
+        <View style={[
+          styles.content, 
+          (activeMode === "Suggested" && aiRecs.length > 0) || (activeMode === "Next" && nextCourse)
+            ? { alignItems: "stretch", justifyContent: "flex-start" } 
+            : {}
+        ]}>
           {activeMode === "Suggested" ? (
             <View style={{ flex: 1, width: '100%' }}>
               {aiRecs.length === 0 && !loadingRecs && !recError && (
@@ -191,7 +223,7 @@ export function AdvisorScreen() {
               )}
               {recError && (
                 <View style={styles.emptyState}>
-                  <Text style={{ color: COLORS.accent.red, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{recError}</Text>
+                  <Text style={{ color: COLORS.accent.rose, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{recError}</Text>
                   <Pressable style={styles.primaryButton} onPress={fetchAIRecommendations}>
                     <Text style={styles.primaryButtonText}>Try Again</Text>
                   </Pressable>
@@ -215,9 +247,49 @@ export function AdvisorScreen() {
               )}
             </View>
           ) : (
-            <Text style={{ color: COLORS.text.secondary }}>
-              Next course recommendation will be displayed here.
-            </Text>
+            <View style={{ flex: 1, width: '100%' }}>
+              {!nextCourse && !loadingNext && !nextError && (
+                <View style={styles.emptyState}>
+                  <Text style={{ color: COLORS.text.secondary, marginBottom: SPACING.md, textAlign: 'center' }}>
+                    AI will pick the single best course for you right now.
+                  </Text>
+                  <Pressable style={styles.primaryButton} onPress={fetchNextCourse}>
+                    <Text style={styles.primaryButtonText}>What Should I Take Next?</Text>
+                  </Pressable>
+                </View>
+              )}
+              {loadingNext && (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color={COLORS.accent.cyan} style={{ marginBottom: SPACING.md }} />
+                  <Text style={{ color: COLORS.text.primary, fontFamily: FONTS.medium }}>Picking the best course...</Text>
+                </View>
+              )}
+              {nextError && (
+                <View style={styles.emptyState}>
+                  <Text style={{ color: COLORS.accent.rose, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{nextError}</Text>
+                  <Pressable style={styles.primaryButton} onPress={fetchNextCourse}>
+                    <Text style={styles.primaryButtonText}>Try Again</Text>
+                  </Pressable>
+                </View>
+              )}
+              {nextCourse && !loadingNext && (
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+                    <Text style={styles.prefsLabel}>Your Next Course</Text>
+                    <Pressable onPress={fetchNextCourse}>
+                      <Text style={{ color: COLORS.accent.cyan, fontSize: FONT_SIZES.xs, fontFamily: FONTS.semiBold }}>Regenerate</Text>
+                    </Pressable>
+                  </View>
+                  <View style={[styles.courseCard, { borderColor: COLORS.accent.cyan, borderWidth: 2 }]}>
+                    <Text style={{ fontFamily: FONTS.bold, fontSize: FONT_SIZES['2xl'], color: COLORS.accent.cyan, marginRight: SPACING.md }}>→</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.courseName, { fontSize: FONT_SIZES.lg, marginBottom: 4 }]}>{nextCourse.course}</Text>
+                      <Text style={{ color: COLORS.text.secondary, fontFamily: FONTS.regular, fontSize: FONT_SIZES.sm }}>{nextCourse.reason}</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -327,7 +399,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
   },
   primaryButtonText: {
-    color: COLORS.midnight.dark,
+    color: COLORS.midnight.DEFAULT,
     fontFamily: FONTS.bold,
     fontSize: FONT_SIZES.sm,
   },
