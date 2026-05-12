@@ -78,7 +78,7 @@ in_group(X,X).
 % assert(taken(Course))
 
 % and also assert the preferred groups/courses
-% assert(preferred(Group)) or assert(preferred(Group))
+% assert(preferred(Group)) or assert(preferred(Course))
 
 % we need to assert difficulty number 1-3
 % we should also assert the level to which every course belongs
