@@ -5,7 +5,7 @@ import * as api from "../services/api";
 /*  Data Models                                                        */
 /* ------------------------------------------------------------------ */
 
-export type CourseDifficulty = "Easy" | "Medium" | "Hard";
+export type CourseDifficulty = "Easy" | "Medium" | "Hard" | "Very Hard";
 
 export interface Course {
   id: string;
@@ -24,16 +24,12 @@ export interface PrerequisiteEdge {
   to: string;
 }
 
-export interface CourseGroup {
-  id: string;
-  name: string;
-  courseIds: string[];
-}
-
 export interface Student {
   id: string;
   name: string;
   student_id: string;
+  current_level: number;
+  preferred_difficulty: CourseDifficulty;
   completed_courses: string[]; // Course IDs
 }
 
@@ -44,8 +40,6 @@ export interface Student {
 export interface CourseState {
   courses: Course[];
   edges: PrerequisiteEdge[];
-  groups: CourseGroup[];
-  
   // Auth state
   role: 'admin' | 'student' | null;
   currentStudent: Student | null;
@@ -62,7 +56,6 @@ export interface CourseState {
 const initialState: CourseState = {
   courses: [],
   edges: [],
-  groups: [],
   role: null,
   currentStudent: null,
   adminKey: null,
@@ -82,6 +75,7 @@ type CourseAction =
   | { type: "SET_AUTH_STUDENT"; payload: Student }
   | { type: "SET_AUTH_ADMIN"; payload: string }
   | { type: "LOGOUT" }
+  | { type: "UPDATE_STUDENT"; payload: Partial<Student> }
   | { type: "LOAD_DATA"; payload: { courses: Course[], edges: PrerequisiteEdge[] } }
   | { type: "ADD_COURSE"; payload: Course }
   | { type: "UPDATE_COURSE"; payload: Course }
@@ -89,12 +83,8 @@ type CourseAction =
   | { type: "SET_COMPLETED_COURSES"; payload: string[] }
   | { type: "ADD_EDGE"; payload: PrerequisiteEdge }
   | { type: "REMOVE_EDGE"; payload: PrerequisiteEdge }
-  | { type: "ADD_GROUP"; payload: CourseGroup }
-  | { type: "REMOVE_GROUP"; payload: string }
-  | { type: "UPDATE_GROUP"; payload: CourseGroup }
   | { type: "SET_COURSE_DIFFICULTY"; payload: { id: string, difficulty: CourseDifficulty } }
-  | { type: "TOGGLE_PREFERRED_COURSE"; payload: string }
-  | { type: "TOGGLE_GROUP_PREFERRED"; payload: { courseIds: string[], makePreferred: boolean } };
+  | { type: "TOGGLE_PREFERRED_COURSE"; payload: string };
 
 /* ------------------------------------------------------------------ */
 /*  Reducer                                                            */
@@ -113,6 +103,14 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
       return { ...state, role: "admin", adminKey: action.payload, currentStudent: null };
     case "LOGOUT":
       return initialState;
+
+    case "UPDATE_STUDENT":
+      return {
+        ...state,
+        currentStudent: state.currentStudent 
+          ? { ...state.currentStudent, ...action.payload } 
+          : null
+      };
 
     case "LOAD_DATA":
       // Re-apply local difficulties to loaded courses
@@ -144,10 +142,6 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
         ...state,
         courses: state.courses.filter((c) => c.id !== courseId),
         edges: state.edges.filter((e) => e.from !== courseId && e.to !== courseId),
-        groups: state.groups.map((g) => ({
-          ...g,
-          courseIds: g.courseIds.filter((id) => id !== courseId),
-        })),
       };
     }
 
@@ -177,23 +171,7 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
         ),
       };
 
-    case "ADD_GROUP":
-      return { ...state, groups: [...state.groups, action.payload] };
 
-    case "REMOVE_GROUP":
-      return {
-        ...state,
-        groups: state.groups.filter((g) => g.id !== action.payload),
-      };
-
-    case "UPDATE_GROUP":
-      return {
-        ...state,
-        groups: state.groups.map((g) =>
-          g.id === action.payload.id ? action.payload : g
-        ),
-      };
-      
     case "SET_COURSE_DIFFICULTY":
       return {
         ...state,
@@ -210,24 +188,6 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
           ? state.preferredCourses.filter(id => id !== courseId)
           : [...state.preferredCourses, courseId]
       };
-    }
-
-    case "TOGGLE_GROUP_PREFERRED": {
-      const { courseIds, makePreferred } = action.payload;
-      if (makePreferred) {
-        // Add all courseIds that aren't already in preferredCourses
-        const toAdd = courseIds.filter(id => !state.preferredCourses.includes(id));
-        return {
-          ...state,
-          preferredCourses: [...state.preferredCourses, ...toAdd]
-        };
-      } else {
-        // Remove all courseIds from preferredCourses
-        return {
-          ...state,
-          preferredCourses: state.preferredCourses.filter(id => !courseIds.includes(id))
-        };
-      }
     }
 
     default:

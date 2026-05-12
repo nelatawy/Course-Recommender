@@ -20,6 +20,7 @@ export function AuthScreen() {
   
   const [name, setName] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [level, setLevel] = useState<number>(1);
   const [adminKey, setAdminKey] = useState("");
   
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,7 @@ export function AuthScreen() {
     
     try {
       if (isSignUp) {
-        const res = await api.signUp(name, studentId);
+        const res = await api.signUp(name, studentId, level);
         dispatch({ type: "SET_AUTH_STUDENT", payload: res.student });
       } else {
         const res = await api.signIn(studentId);
@@ -110,16 +111,36 @@ export function AuthScreen() {
           {activeTab === "student" ? (
             <>
               {isSignUp && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Full Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="John Doe"
-                    placeholderTextColor={COLORS.text.muted}
-                    value={name}
-                    onChangeText={setName}
-                  />
-                </View>
+                <>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Full Name</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="John Doe"
+                      placeholderTextColor={COLORS.text.muted}
+                      value={name}
+                      onChangeText={setName}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Current Level</Text>
+                    <View style={{ flexDirection: "row", gap: SPACING.sm }}>
+                      {[1, 2, 3, 4].map((l) => (
+                        <Pressable
+                          key={l}
+                          style={[
+                            styles.input,
+                            { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: SPACING.sm },
+                            level === l && { backgroundColor: COLORS.surface.light, borderColor: COLORS.text.primary }
+                          ]}
+                          onPress={() => setLevel(l)}
+                        >
+                          <Text style={[styles.label, level === l && { color: COLORS.text.primary }]}>Level {l}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </>
               )}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Student ID</Text>

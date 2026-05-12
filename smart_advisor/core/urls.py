@@ -21,6 +21,8 @@ urlpatterns = [
     path('api/prerequisites/add/', api_views.prerequisite_add),
     path('api/prerequisites/remove/', api_views.prerequisite_remove),
 
-    # Student completed courses
+    # Student endpoints
+    path('api/students/<int:student_pk>/profile/', api_views.update_student_profile),
     path('api/students/<int:student_pk>/completed_courses/', api_views.toggle_completed_course),
+    path('api/students/<int:student_pk>/preferred_difficulty/', api_views.update_student_difficulty),
 ]

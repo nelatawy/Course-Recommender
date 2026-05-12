@@ -64,6 +64,7 @@ def _student_to_dict(student):
         'name': student.name,
         'student_id': student.student_id,
         'current_level': student.current_level,
+        'preferred_difficulty': student.preferred_difficulty,
         'gpa': student.gpa,
         'completed_courses': list(
             student.completed_courses.values_list('id', flat=True)
@@ -105,7 +106,9 @@ def auth_signup(request):
             status=409,
         )
 
-    student = Student.objects.create(name=name, student_id=student_id)
+    current_level = data.get('level', 1)
+
+    student = Student.objects.create(name=name, student_id=student_id, current_level=current_level)
     return JsonResponse(
         {'status': 'success', 'student': _student_to_dict(student)},
         status=201,
@@ -140,6 +143,36 @@ def auth_signin(request):
             status=404,
         )
 
+    return JsonResponse({'status': 'success', 'student': _student_to_dict(student)})
+
+
+@require_http_methods(['PUT'])
+def update_student_profile(request, student_pk):
+    """Update student preferences.
+
+    Expects JSON body: ``{"current_level": <int>, "preferred_difficulty": "..."}``
+    """
+    try:
+        student = Student.objects.get(id=student_pk)
+    except Student.DoesNotExist:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Student not found.'},
+            status=404,
+        )
+
+    data = _parse_json_body(request)
+    if not data:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Invalid JSON body.'},
+            status=400,
+        )
+
+    if 'current_level' in data:
+        student.current_level = int(data['current_level'])
+    if 'preferred_difficulty' in data:
+        student.preferred_difficulty = data['preferred_difficulty']
+
+    student.save()
     return JsonResponse({'status': 'success', 'student': _student_to_dict(student)})
 
 
@@ -421,3 +454,25 @@ def toggle_completed_course(request, student_pk):
             student.completed_courses.values_list('id', flat=True)
         ),
     })
+
+
+@require_http_methods(['POST'])
+def update_student_difficulty(request, student_pk):
+    """Update the student's preferred difficulty ceiling."""
+    try:
+        student = Student.objects.get(id=student_pk)
+    except Student.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Student not found.'}, status=404)
+
+    data = _parse_json_body(request)
+    if not data:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON body.'}, status=400)
+
+    difficulty = data.get('preferred_difficulty', '').strip()
+    valid = [c[0] for c in Student.DIFFICULTY_CEILING_CHOICES]
+    if difficulty not in valid:
+        return JsonResponse({'status': 'error', 'message': f'Must be one of {valid}.'}, status=400)
+
+    student.preferred_difficulty = difficulty
+    student.save()
+    return JsonResponse({'status': 'success', 'student': _student_to_dict(student)})

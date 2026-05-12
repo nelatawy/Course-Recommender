@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, FONTS, FONT_SIZES, SPACING } from "../constants/theme";
 import { CourseTable } from "../components/CourseTable";
 import { PrerequisiteGraph } from "../components/PrerequisiteGraph";
-import { CourseGrouping } from "../components/CourseGrouping";
 import { useCourseStore } from "../store/CourseContext";
 import { Pressable } from "react-native";
 import { LogOut } from "lucide-react-native";
@@ -20,7 +19,7 @@ export function AdminDashboardScreen() {
           <View>
             <Text style={styles.headerTitle}>Admin Dashboard</Text>
             <Text style={styles.headerSubtitle}>
-              Manage courses, prerequisites, and groups.
+              Manage courses and prerequisites.
             </Text>
           </View>
           <Pressable 
@@ -37,7 +36,6 @@ export function AdminDashboardScreen() {
       >
         <CourseTable readOnly={false} />
         <PrerequisiteGraph readOnly={false} />
-        <CourseGrouping readOnly={false} />
       </ScrollView>
     </View>
   );

@@ -23,7 +23,7 @@ class Course(UniversalTimeObserver):
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default="medium")
     level = models.IntegerField(choices=LEVEL_CHOICES)
     course_department = models.CharField(max_length=10, default="CSE")
-    prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True)
+    prerequisites = models.ManyToManyField("self", symmetrical=False, blank=True,related_name="required_by")
 
     def __str__(self):
         return f"{self.name} (Level {self.level}, {self.get_difficulty_display()})"
@@ -35,24 +35,45 @@ class Course(UniversalTimeObserver):
 
 
 class Student(UniversalTimeObserver):
+    DIFFICULTY_CEILING_CHOICES = [
+        ("easy",      "Easy"),
+        ("medium",    "Medium"),
+        ("hard",      "Hard"),
+        ("very_hard", "Very Hard"),
+    ]
+
+    DIFFICULTY_TO_PROLOG = {
+        "easy":      0,
+        "medium":    1,
+        "hard":      2,
+        "very_hard": 3,
+    }
+
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=20, unique=True)
     current_level = models.IntegerField(choices=Course.LEVEL_CHOICES, default=1)
     gpa = models.FloatField(default=0.0)
     completed_courses = models.ManyToManyField(Course, related_name="completed_by", blank=True)
-
-    # List of subject/topic names the student prefers, e.g. ["AI", "Networks", "Security"].
-    # These must match the group names used in in_group/2 Prolog facts.
-    # Admin or student sets this; Prolog reads each entry as preferred(Subject).
     preferred_subjects = models.JSONField(default=list, blank=True)
+    preferred_difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CEILING_CHOICES,
+        default="hard",
+    )
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not isinstance(self.preferred_subjects, list) or not all(
+            isinstance(s, str) for s in self.preferred_subjects
+        ):
+            raise ValidationError("preferred_subjects must be a list of strings.")
 
     def __str__(self):
         return f"{self.name} (Level {self.current_level})"
 
-
 class StudyPlan(UniversalTimeObserver):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="study_plans")
-    recommended_courses = models.ManyToManyField(Course)
+    recommended_courses = models.ManyToManyField(Course,blank=True)
     generated_by = models.CharField(max_length=50)
 
     def __str__(self):

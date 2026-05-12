@@ -198,5 +198,6 @@ export const DIFFICULTY_COLORS: Record<string, string> = {
   Easy: "#10B981",   // Emerald
   Medium: "#F59E0B", // Amber
   Hard: "#F43F5E",   // Rose
+  "Very Hard": "#9F1239", // Dark Rose
 } as const;
 

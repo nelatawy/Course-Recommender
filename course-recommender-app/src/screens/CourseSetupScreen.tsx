@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, FONTS, FONT_SIZES, SPACING } from "../constants/theme";
 import { CourseTable } from "../components/CourseTable";
 import { PrerequisiteGraph } from "../components/PrerequisiteGraph";
-import { CourseGrouping } from "../components/CourseGrouping";
 import { useCourseStore } from "../store/CourseContext";
 import { Pressable } from "react-native";
 import { LogOut } from "lucide-react-native";
@@ -24,7 +23,7 @@ export function CourseSetupScreen() {
           <View>
             <Text style={styles.headerTitle}>Course Catalog</Text>
             <Text style={styles.headerSubtitle}>
-              View courses, prerequisites, and groups.
+              View courses and prerequisites.
             </Text>
           </View>
           <Pressable 
@@ -41,7 +40,6 @@ export function CourseSetupScreen() {
       >
         <CourseTable readOnly={true} />
         <PrerequisiteGraph readOnly={true} />
-        <CourseGrouping readOnly={true} />
       </ScrollView>
     </View>
   );
