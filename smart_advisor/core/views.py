@@ -49,3 +49,10 @@ def get_ai_recommendations(request, student_id):
         
     except Student.DoesNotExist:
         return JsonResponse({"status": "error", "message": "Student not found"}, status=404)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {"status": "error", "message": f"{type(e).__name__}: {str(e)}"},
+            status=500,
+        )

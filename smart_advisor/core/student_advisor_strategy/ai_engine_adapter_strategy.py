@@ -17,12 +17,19 @@ class AIEngineAdapter(MasterAdvisorStrategy):
             {
                 "name": c.name,
                 "level": c.level,
-                "department": c.course_department,
+                "difficulty": c.difficulty,
                 "prerequisites": [p.name for p in c.prerequisites.all()]
             }
             for c in all_courses
             if c.name not in completed_names 
         ]
+
+        from core.models import Course
+        preferred_ids = student.preferred_subjects or []
+        preferred_course_names = list(
+            Course.objects.filter(id__in=preferred_ids).values_list('name', flat=True)
+        )
+        preferred_difficulty = student.preferred_difficulty
 
         # Write the prompt
         prompt = f"""
@@ -32,8 +39,9 @@ recommend which courses this student should take next.
 Student Profile:
 - Name: {student.name}
 - Current Level: {student.current_level}
-- GPA: {student.gpa}
 - Completed Courses: {completed_names}
+- Preferred Subjects: {preferred_course_names}
+- Preferred Difficulty: {preferred_difficulty}
 
 Available Courses :
 {json.dumps(available_courses, indent=2)}
@@ -41,7 +49,8 @@ Available Courses :
 Rules:
 - Only recommend courses whose prerequisites are all in the student's completed courses list.
 - Prefer courses that match the student's current level.
-- If GPA is below 2.0, recommend easier (lower-level) courses first.
+- Try to recommend courses that match the student's preferred subjects.
+- Try to recommend courses whose difficulty matches or is lower than the student's preferred difficulty.
 - Do NOT recommend courses already completed.
 
 Respond ONLY with a valid JSON array of course name strings. No explanation, no markdown, no extra text.
@@ -50,7 +59,7 @@ Example: ["Data Structures", "Algorithms", "AI"]
 
         # Calling Gemini and parse the response
         response = client.models.generate_content(
-            model='gemini-2.5-flash-lite',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         raw_text = response.text.strip()

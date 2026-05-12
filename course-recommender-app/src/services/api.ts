@@ -57,7 +57,7 @@ export async function getCourses() {
   return fetchApi("/courses/");
 }
 
-export async function createCourse(courseData: { name: string; level: number; credits?: number; course_department?: string }, adminKey: string) {
+export async function createCourse(courseData: { name: string; level: number; difficulty?: string; course_department?: string }, adminKey: string) {
   return fetchApi("/courses/", {
     method: "POST",
     headers: { "X-Admin-Key": adminKey },
@@ -110,6 +110,13 @@ export async function removePrerequisite(fromId: string | number, toId: string |
 
 export async function toggleCompletedCourse(studentId: string | number, courseId: string | number) {
   return fetchApi(`/students/${studentId}/completed_courses/`, {
+    method: "POST",
+    body: JSON.stringify({ course_id: courseId }),
+  });
+}
+
+export async function togglePreferredCourse(studentId: string | number, courseId: string | number) {
+  return fetchApi(`/students/${studentId}/preferred_courses/`, {
     method: "POST",
     body: JSON.stringify({ course_id: courseId }),
   });

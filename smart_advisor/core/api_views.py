@@ -46,7 +46,7 @@ def _course_to_dict(course):
     return {
         'id': course.id,
         'name': course.name,
-        'credits': course.credits,
+        'difficulty': course.difficulty,
         'level': course.level,
         'course_department': course.course_department,
         'prerequisites': list(
@@ -69,6 +69,7 @@ def _student_to_dict(student):
         'completed_courses': list(
             student.completed_courses.values_list('id', flat=True)
         ),
+        'preferred_subjects': student.preferred_subjects or [],
         'created_at': student.created_at.isoformat(),
         'updated_at': student.updated_at.isoformat(),
     }
@@ -227,7 +228,7 @@ def course_list(request):
 
     name = data.get('name', '').strip()
     level = data.get('level')
-    credits = data.get('credits', 3)
+    difficulty = data.get('difficulty', 'medium')
     department = data.get('course_department', 'CSE')
 
     if not name or level is None:
@@ -240,7 +241,7 @@ def course_list(request):
         course = Course.objects.create(
             name=name,
             level=int(level),
-            credits=int(credits),
+            difficulty=difficulty,
             course_department=department,
         )
     except Exception as e:
@@ -290,8 +291,8 @@ def course_detail(request, course_id):
         course.name = data['name'].strip()
     if 'level' in data:
         course.level = int(data['level'])
-    if 'credits' in data:
-        course.credits = int(data['credits'])
+    if 'difficulty' in data:
+        course.difficulty = data['difficulty']
     if 'course_department' in data:
         course.course_department = data['course_department']
 
@@ -476,3 +477,54 @@ def update_student_difficulty(request, student_pk):
     student.preferred_difficulty = difficulty
     student.save()
     return JsonResponse({'status': 'success', 'student': _student_to_dict(student)})
+
+
+@require_http_methods(['POST'])
+def toggle_preferred_subject(request, student_pk):
+    """Toggle a course ID in the student's preferred_subjects list.
+
+    Expects JSON body: ``{"course_id": <int>}``
+    """
+    try:
+        student = Student.objects.get(id=student_pk)
+    except Student.DoesNotExist:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Student not found.'},
+            status=404,
+        )
+
+    data = _parse_json_body(request)
+    if not data:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Invalid JSON body.'},
+            status=400,
+        )
+
+    course_id = data.get('course_id')
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return JsonResponse(
+            {'status': 'error', 'message': 'Course not found.'},
+            status=404,
+        )
+
+    subjects = student.preferred_subjects or []
+    course_id_str = str(course.id)
+
+    if course_id_str in subjects:
+        subjects.remove(course_id_str)
+        preferred = False
+    else:
+        subjects.append(course_id_str)
+        preferred = True
+
+    student.preferred_subjects = subjects
+    student.save()
+
+    return JsonResponse({
+        'status': 'success',
+        'course_id': course.id,
+        'preferred': preferred,
+        'preferred_subjects': student.preferred_subjects,
+    })

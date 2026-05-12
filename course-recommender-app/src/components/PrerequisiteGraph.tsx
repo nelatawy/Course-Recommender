@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import { Svg, Rect, Path, Text as SvgText, Defs, Marker } from "react-native-svg";
-import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import { View, Text, StyleSheet, Pressable, LayoutChangeEvent } from "react-native";
+import { Svg, Path, Defs, Marker } from "react-native-svg";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -20,7 +20,6 @@ import {
 import { useCourseStore } from "../store/CourseContext";
 import { AddEdgeModal } from "./AddEdgeModal";
 
-// Constants for node rendering
 const NODE_WIDTH = 120;
 const NODE_HEIGHT = 40;
 
@@ -35,6 +34,8 @@ interface DraggableNodeProps {
   level: number;
   initialX: number;
   initialY: number;
+  containerWidth: number;
+  containerHeight: number;
   onDrag: (id: string, x: number, y: number) => void;
   onRemoveNode: (id: string) => void;
   readOnly?: boolean;
@@ -46,6 +47,8 @@ function DraggableNode({
   level,
   initialX,
   initialY,
+  containerWidth,
+  containerHeight,
   onDrag,
   onRemoveNode,
   readOnly,
@@ -55,15 +58,20 @@ function DraggableNode({
   const contextX = useSharedValue(0);
   const contextY = useSharedValue(0);
 
+  const maxX = containerWidth > 0 ? containerWidth - NODE_WIDTH : 200;
+  const maxY = containerHeight > 0 ? containerHeight - NODE_HEIGHT : 350;
+
   const gesture = Gesture.Pan()
     .onStart(() => {
       contextX.value = x.value;
       contextY.value = y.value;
     })
     .onUpdate((event) => {
-      if (readOnly) return;
-      x.value = contextX.value + event.translationX;
-      y.value = contextY.value + event.translationY;
+      const newX = contextX.value + event.translationX;
+      const newY = contextY.value + event.translationY;
+      // Clamp to container bounds so nodes can never escape the box
+      x.value = Math.max(0, Math.min(newX, maxX));
+      y.value = Math.max(0, Math.min(newY, maxY));
       runOnJS(onDrag)(id, x.value, y.value);
     })
     .onEnd(() => {
@@ -103,28 +111,46 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
   const { state, dispatch } = useCourseStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [nodePositions, setNodePositions] = useState<Record<string, NodePos>>({});
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  // Initialize node positions based on levels if they don't exist
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setContainerSize({ width, height });
+  };
+
+  // Initialize node positions when courses or container size change
   React.useEffect(() => {
+    if (containerSize.width === 0) return; // Wait until we know the real width
+
     const newPos = { ...nodePositions };
     let changed = false;
 
-    // Group by level
+    // Group courses by level
     const byLevel: Record<number, typeof state.courses> = {};
     state.courses.forEach((c) => {
       if (!byLevel[c.level]) byLevel[c.level] = [];
       byLevel[c.level].push(c);
     });
 
+    // Available space per column (subtract padding)
+    const usableWidth = containerSize.width - 20;
+    const maxCols = Math.max(1, Math.floor(usableWidth / (NODE_WIDTH + 10)));
+
     Object.keys(byLevel).forEach((levelStr) => {
       const level = parseInt(levelStr, 10);
       const levelCourses = byLevel[level];
-      const startX = 20;
-      const y = 20 + level * 100; // 100px vertical gap between levels
 
       levelCourses.forEach((c, index) => {
         if (!newPos[c.id]) {
-          newPos[c.id] = { x: startX + index * (NODE_WIDTH + 20), y };
+          const col = index % maxCols;
+          const row = Math.floor(index / maxCols);
+          const xPos = 10 + col * (NODE_WIDTH + 10);
+          const yPos = 10 + (level - 1) * 120 + row * (NODE_HEIGHT + 10);
+          // Clamp to make sure the initial spawn is inside bounds
+          newPos[c.id] = {
+            x: Math.min(xPos, containerSize.width - NODE_WIDTH),
+            y: Math.min(yPos, containerSize.height - NODE_HEIGHT),
+          };
           changed = true;
         }
       });
@@ -133,10 +159,9 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
     if (changed) {
       setNodePositions(newPos);
     }
-  }, [state.courses]);
+  }, [state.courses, containerSize]);
 
   const handleDrag = (id: string, x: number, y: number) => {
-    // In a real app we might debounce this or use Reanimated to update edges continuously
     setNodePositions((prev) => ({ ...prev, [id]: { x, y } }));
   };
 
@@ -151,13 +176,11 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
       const toPos = nodePositions[edge.to];
       if (!fromPos || !toPos) return null;
 
-      // Draw path from bottom of 'from' node to top of 'to' node
       const startX = fromPos.x + NODE_WIDTH / 2;
       const startY = fromPos.y + NODE_HEIGHT;
       const endX = toPos.x + NODE_WIDTH / 2;
       const endY = toPos.y;
 
-      // Cubic bezier for a nice curve
       const path = `M ${startX} ${startY} C ${startX} ${startY + 40}, ${endX} ${endY - 40}, ${endX} ${endY}`;
 
       return (
@@ -187,10 +210,11 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
       </View>
 
       <Text style={styles.subtitle}>
-        Drag nodes to rearrange. An edge from A → B means A is a prerequisite of B.
+        Drag nodes to rearrange. An edge A → B means A is a prerequisite of B.
       </Text>
 
-      <View style={styles.graphContainer}>
+      {/* onLayout tells us the real pixel width/height so we can clamp nodes */}
+      <View style={styles.graphContainer} onLayout={handleLayout}>
         {state.courses.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>Add courses first to build a graph.</Text>
@@ -225,6 +249,8 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
                   level={course.level}
                   initialX={pos.x}
                   initialY={pos.y}
+                  containerWidth={containerSize.width}
+                  containerHeight={containerSize.height}
                   onDrag={handleDrag}
                   readOnly={readOnly}
                   onRemoveNode={(id) => dispatch({ type: "REMOVE_COURSE", payload: id })}

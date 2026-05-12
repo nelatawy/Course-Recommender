@@ -30,7 +30,8 @@ export interface Student {
   student_id: string;
   current_level: number;
   preferred_difficulty: CourseDifficulty;
-  completed_courses: string[]; // Course IDs
+  completed_courses: string[]; // Course IDs (stringified)
+  preferred_subjects: string[]; // Course IDs the student starred (stringified)
 }
 
 /* ------------------------------------------------------------------ */
@@ -47,7 +48,6 @@ export interface CourseState {
 
   // Local-only state to persist difficulty since backend doesn't support it
   localDifficulties: Record<string, CourseDifficulty>;
-  preferredCourses: string[]; // Frontend-only for now
 
   loading: boolean;
   error: string | null;
@@ -60,7 +60,6 @@ const initialState: CourseState = {
   currentStudent: null,
   adminKey: null,
   localDifficulties: {},
-  preferredCourses: [],
   loading: false,
   error: null,
 };
@@ -97,8 +96,20 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
     case "SET_ERROR":
       return { ...state, error: action.payload };
     
-    case "SET_AUTH_STUDENT":
-      return { ...state, role: "student", currentStudent: action.payload, adminKey: null };
+    case "SET_AUTH_STUDENT": {
+      const s = action.payload;
+      return {
+        ...state,
+        role: "student",
+        currentStudent: {
+          ...s,
+          id: String(s.id),
+          completed_courses: (s.completed_courses || []).map((id: any) => String(id)),
+          preferred_subjects: (s.preferred_subjects || []).map((id: any) => String(id)),
+        },
+        adminKey: null,
+      };
+    }
     case "SET_AUTH_ADMIN":
       return { ...state, role: "admin", adminKey: action.payload, currentStudent: null };
     case "LOGOUT":
@@ -180,13 +191,18 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
       };
 
     case "TOGGLE_PREFERRED_COURSE": {
+      if (!state.currentStudent) return state;
       const courseId = action.payload;
-      const isPreferred = state.preferredCourses.includes(courseId);
+      const current = state.currentStudent.preferred_subjects || [];
+      const isPreferred = current.includes(courseId);
       return {
         ...state,
-        preferredCourses: isPreferred
-          ? state.preferredCourses.filter(id => id !== courseId)
-          : [...state.preferredCourses, courseId]
+        currentStudent: {
+          ...state.currentStudent,
+          preferred_subjects: isPreferred
+            ? current.filter(id => id !== courseId)
+            : [...current, courseId],
+        },
       };
     }
 
