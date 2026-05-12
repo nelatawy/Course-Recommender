@@ -139,6 +139,12 @@ export async function getAIRecommendations(studentId: string | number) {
   });
 }
 
+export async function getPrologRecommendations(studentId: string | number) {
+  return fetchApi(`/recommend/prolog/${studentId}/`, {
+    method: "GET",
+  });
+}
+
 export async function getAINextCourse(studentId: string | number) {
   return fetchApi(`/recommend/ai/${studentId}/next/`, {
     method: "GET",

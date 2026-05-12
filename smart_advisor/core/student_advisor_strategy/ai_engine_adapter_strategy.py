@@ -24,11 +24,7 @@ class AIEngineAdapter(MasterAdvisorStrategy):
             if c.name not in completed_names 
         ]
 
-        from core.models import Course
-        preferred_ids = student.preferred_subjects or []
-        preferred_course_names = list(
-            Course.objects.filter(id__in=preferred_ids).values_list('name', flat=True)
-        )
+        preferred_course_names = student.preferred_subjects or []
         preferred_difficulty = student.preferred_difficulty
 
         # Write the prompt
@@ -91,16 +87,10 @@ Example: ["Data Structures", "Algorithms", "AI"]
             if c.name not in completed_names
         ]
 
-        from core.models import Course
-        preferred_ids = student.preferred_subjects or []
-        preferred_course_names = list(
-            Course.objects.filter(id__in=preferred_ids).values_list('name', flat=True)
-        )
-
         return {
             "completed_names": completed_names,
             "available_courses": available_courses,
-            "preferred_course_names": preferred_course_names,
+            "preferred_course_names": student.preferred_subjects or [],
             "preferred_difficulty": student.preferred_difficulty,
         }
 

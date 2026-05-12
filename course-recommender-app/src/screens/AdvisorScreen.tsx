@@ -38,6 +38,7 @@ export function AdvisorScreen() {
   const [aiRecs, setAiRecs] = useState<string[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
   const [recError, setRecError] = useState<string | null>(null);
+  const [advisorEngine, setAdvisorEngine] = useState<"AI" | "Prolog">("AI");
 
   const [nextCourse, setNextCourse] = useState<{ course: string; reason: string } | null>(null);
   const [loadingNext, setLoadingNext] = useState(false);
@@ -88,12 +89,15 @@ export function AdvisorScreen() {
     });
   };
 
-  const fetchAIRecommendations = async () => {
+  const fetchPlan = async () => {
     if (!student) return;
     setLoadingRecs(true);
     setRecError(null);
     try {
-      const res = await api.getAIRecommendations(student.id);
+      const res = advisorEngine === "AI" 
+        ? await api.getAIRecommendations(student.id)
+        : await api.getPrologRecommendations(student.id);
+
       if (res.status === "success") {
         setAiRecs(res.recommendations);
       } else {
@@ -197,6 +201,34 @@ export function AdvisorScreen() {
           </Pressable>
         </View>
 
+        {/* Engine Selector (Only for Suggested Plan) */}
+        {activeMode === "Suggested" && (
+          <View style={styles.engineContainer}>
+            {["AI", "Prolog"].map((engine) => (
+              <Pressable
+                key={engine}
+                style={[
+                  styles.engineButton,
+                  advisorEngine === engine && styles.engineButtonActive,
+                ]}
+                onPress={() => {
+                  setAdvisorEngine(engine as any);
+                  setAiRecs([]); // Clear current plan to force refetch
+                }}
+              >
+                <Text
+                  style={[
+                    styles.engineButtonText,
+                    advisorEngine === engine && styles.engineButtonTextActive,
+                  ]}
+                >
+                  {engine}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
         <View style={[
           styles.content, 
           (activeMode === "Suggested" && aiRecs.length > 0) || (activeMode === "Next" && nextCourse)
@@ -210,21 +242,23 @@ export function AdvisorScreen() {
                   <Text style={{ color: COLORS.text.secondary, marginBottom: SPACING.md }}>
                     Full course sequence will be displayed here.
                   </Text>
-                  <Pressable style={styles.primaryButton} onPress={fetchAIRecommendations}>
-                    <Text style={styles.primaryButtonText}>Get AI Recommendations</Text>
+                  <Pressable style={styles.primaryButton} onPress={fetchPlan}>
+                    <Text style={styles.primaryButtonText}>Get {advisorEngine} Plan</Text>
                   </Pressable>
                 </View>
               )}
               {loadingRecs && (
                 <View style={styles.emptyState}>
                   <ActivityIndicator size="large" color={COLORS.accent.cyan} style={{ marginBottom: SPACING.md }} />
-                  <Text style={{ color: COLORS.text.primary, fontFamily: FONTS.medium }}>Analyzing your profile...</Text>
+                  <Text style={{ color: COLORS.text.primary, fontFamily: FONTS.medium }}>
+                    {advisorEngine === "AI" ? "Analyzing with AI..." : "Consulting Prolog..."}
+                  </Text>
                 </View>
               )}
               {recError && (
                 <View style={styles.emptyState}>
                   <Text style={{ color: COLORS.accent.rose, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{recError}</Text>
-                  <Pressable style={styles.primaryButton} onPress={fetchAIRecommendations}>
+                  <Pressable style={styles.primaryButton} onPress={fetchPlan}>
                     <Text style={styles.primaryButtonText}>Try Again</Text>
                   </Pressable>
                 </View>
@@ -232,8 +266,8 @@ export function AdvisorScreen() {
               {aiRecs.length > 0 && !loadingRecs && (
                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-                    <Text style={styles.prefsLabel}>Your AI Study Plan</Text>
-                    <Pressable onPress={fetchAIRecommendations}>
+                    <Text style={styles.prefsLabel}>Your {advisorEngine} Plan</Text>
+                    <Pressable onPress={fetchPlan}>
                       <Text style={{ color: COLORS.accent.cyan, fontSize: FONT_SIZES.xs, fontFamily: FONTS.semiBold }}>Regenerate</Text>
                     </Pressable>
                   </View>
@@ -425,5 +459,31 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.base,
     color: COLORS.text.primary,
     flex: 1,
+  },
+  engineContainer: {
+    flexDirection: 'row',
+    marginBottom: SPACING.lg,
+    backgroundColor: COLORS.surface.dark,
+    borderRadius: BORDER_RADIUS.md,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border.DEFAULT,
+  },
+  engineButton: {
+    flex: 1,
+    paddingVertical: SPACING.sm,
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  engineButtonActive: {
+    backgroundColor: COLORS.accent.cyan,
+  },
+  engineButtonText: {
+    fontFamily: FONTS.semiBold,
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.text.secondary,
+  },
+  engineButtonTextActive: {
+    color: COLORS.midnight.DEFAULT,
   },
 });

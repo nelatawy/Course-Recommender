@@ -510,13 +510,13 @@ def toggle_preferred_subject(request, student_pk):
         )
 
     subjects = student.preferred_subjects or []
-    course_id_str = str(course.id)
+    course_name = course.name.lower()
 
-    if course_id_str in subjects:
-        subjects.remove(course_id_str)
+    if course_name in subjects:
+        subjects.remove(course_name)
         preferred = False
     else:
-        subjects.append(course_id_str)
+        subjects.append(course_name)
         preferred = True
 
     student.preferred_subjects = subjects

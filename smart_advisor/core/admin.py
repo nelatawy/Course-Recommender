@@ -74,7 +74,7 @@ class StudentAdmin(admin.ModelAdmin):
         (
             "Preferences",
             {
-                "fields": ("preferred_subjects_input",),
+                "fields": ("preferred_subjects_input","preferred_difficulty"),
                 "description": (
                     "Course IDs the student has starred as interesting.  "
                     "Managed by the student via the mobile app."
