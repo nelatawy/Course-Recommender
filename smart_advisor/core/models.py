@@ -38,6 +38,7 @@ class Student(UniversalTimeObserver):
     name = models.CharField(max_length=100)
     student_id = models.CharField(max_length=20, unique=True)
     current_level = models.IntegerField(choices=Course.LEVEL_CHOICES, default=1)
+    preferred_difficulty = models.CharField(max_length=10, choices=Course.DIFFICULTY_CHOICES, default="medium")
     gpa = models.FloatField(default=0.0)
     completed_courses = models.ManyToManyField(Course, related_name="completed_by", blank=True)
 

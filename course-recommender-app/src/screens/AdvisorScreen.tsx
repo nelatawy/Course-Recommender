@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Dimensions, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -8,19 +8,98 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import { COLORS, FONTS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../constants/theme";
+import { useCourseStore, CourseDifficulty } from "../store/CourseContext";
+import * as api from "../services/api";
+
+const DIFFICULTIES: CourseDifficulty[] = ["Easy", "Medium", "Hard", "Very Hard"];
+const DIFF_MAPPING: Record<CourseDifficulty, string> = {
+  "Easy": "easy",
+  "Medium": "medium",
+  "Hard": "hard",
+  "Very Hard": "very_hard"
+};
+const BACKEND_TO_FRONTEND: Record<string, CourseDifficulty> = {
+  "easy": "Easy",
+  "medium": "Medium",
+  "hard": "Hard",
+  "very_hard": "Very Hard"
+};
 
 const { width } = Dimensions.get("window");
 
 export function AdvisorScreen() {
+  const { state, dispatch } = useCourseStore();
+  const student = state.currentStudent;
   const [activeMode, setActiveMode] = useState<"Suggested" | "Next">("Suggested");
   const tabPosition = useSharedValue(0);
+  const diffPosition = useSharedValue(0);
+  const [updatingDiff, setUpdatingDiff] = useState(false);
+
+  const [aiRecs, setAiRecs] = useState<string[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+  const [recError, setRecError] = useState<string | null>(null);
+
+  const currentDiff = student?.preferred_difficulty
+    ? (BACKEND_TO_FRONTEND[student.preferred_difficulty as unknown as string] || student.preferred_difficulty)
+    : "Medium";
+
+  useEffect(() => {
+    diffPosition.value = withSpring(DIFFICULTIES.indexOf(currentDiff), {
+      damping: 60,
+      stiffness: 300,
+    });
+  }, [currentDiff]);
+
+  const diffIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: diffPosition.value * ((width - SPACING.xl * 2 - 8) / 4),
+        },
+      ],
+    };
+  });
+
+  const handleDifficultyChange = async (diff: CourseDifficulty) => {
+    if (!student || updatingDiff || currentDiff === diff) return;
+    setUpdatingDiff(true);
+    try {
+      const backendVal = DIFF_MAPPING[diff];
+      await api.updateStudentPreferences(student.id, { preferred_difficulty: backendVal });
+      // Update local state
+      dispatch({ type: "UPDATE_STUDENT", payload: { preferred_difficulty: backendVal as any } });
+      // Triggering recommendation change can be simulated or handled by data refetch
+    } catch (err) {
+      console.error("Failed to update difficulty preference", err);
+    } finally {
+      setUpdatingDiff(false);
+    }
+  };
 
   const handleModeChange = (mode: "Suggested" | "Next") => {
     setActiveMode(mode);
     tabPosition.value = withSpring(mode === "Suggested" ? 0 : 1, {
-      damping: 20,
-      stiffness: 200,
+      damping: 45,
+      stiffness: 300,
     });
+  };
+
+  const fetchAIRecommendations = async () => {
+    if (!student) return;
+    setLoadingRecs(true);
+    setRecError(null);
+    try {
+      const res = await api.getAIRecommendations(student.id);
+      if (res.status === "success") {
+        setAiRecs(res.recommendations);
+      } else {
+        setRecError(res.message || "Failed to generate plan");
+      }
+    } catch (err) {
+      setRecError("Network error. Please try again.");
+    } finally {
+      setLoadingRecs(false);
+    }
   };
 
   const indicatorStyle = useAnimatedStyle(() => {
@@ -53,10 +132,35 @@ export function AdvisorScreen() {
           <Text style={styles.headerSubtitle}>Get personalized recommendations.</Text>
         </View>
 
+        {/* Difficulty Preferences */}
+        <View style={styles.prefsContainer}>
+          <Text style={styles.prefsLabel}>Preferred Difficulty</Text>
+          <View style={styles.toggleContainer}>
+            <Animated.View style={[styles.diffIndicator, diffIndicatorStyle]} />
+            {DIFFICULTIES.map((d) => {
+              const isActive = currentDiff === d;
+              return (
+                <Pressable
+                  key={d}
+                  style={styles.toggleButton}
+                  onPress={() => handleDifficultyChange(d)}
+                >
+                  <Text style={[
+                    styles.toggleText,
+                    { color: isActive ? COLORS.midnight.DEFAULT : COLORS.text.primary }
+                  ]}>
+                    {d === "Very Hard" ? "V. Hard" : d}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Mode Selector */}
         <View style={styles.toggleContainer}>
           <Animated.View style={[styles.toggleIndicator, indicatorStyle]} />
-          
+
           <Pressable style={styles.toggleButton} onPress={() => handleModeChange("Suggested")}>
             <Animated.Text style={[styles.toggleText, suggestedTextStyle]}>Suggested Order</Animated.Text>
           </Pressable>
@@ -65,13 +169,56 @@ export function AdvisorScreen() {
             <Animated.Text style={[styles.toggleText, nextTextStyle]}>Recommend Next</Animated.Text>
           </Pressable>
         </View>
-        
-        <View style={styles.content}>
-          <Text style={{ color: COLORS.text.secondary }}>
-            {activeMode === "Suggested" 
-              ? "Full course sequence will be displayed here." 
-              : "Next course recommendation will be displayed here."}
-          </Text>
+
+        <View style={[styles.content, activeMode === "Suggested" && aiRecs.length > 0 ? { alignItems: "stretch", justifyContent: "flex-start" } : {}]}>
+          {activeMode === "Suggested" ? (
+            <View style={{ flex: 1, width: '100%' }}>
+              {aiRecs.length === 0 && !loadingRecs && !recError && (
+                <View style={styles.emptyState}>
+                  <Text style={{ color: COLORS.text.secondary, marginBottom: SPACING.md }}>
+                    Full course sequence will be displayed here.
+                  </Text>
+                  <Pressable style={styles.primaryButton} onPress={fetchAIRecommendations}>
+                    <Text style={styles.primaryButtonText}>Get AI Recommendations</Text>
+                  </Pressable>
+                </View>
+              )}
+              {loadingRecs && (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color={COLORS.accent.cyan} style={{ marginBottom: SPACING.md }} />
+                  <Text style={{ color: COLORS.text.primary, fontFamily: FONTS.medium }}>Analyzing your profile...</Text>
+                </View>
+              )}
+              {recError && (
+                <View style={styles.emptyState}>
+                  <Text style={{ color: COLORS.accent.red, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{recError}</Text>
+                  <Pressable style={styles.primaryButton} onPress={fetchAIRecommendations}>
+                    <Text style={styles.primaryButtonText}>Try Again</Text>
+                  </Pressable>
+                </View>
+              )}
+              {aiRecs.length > 0 && !loadingRecs && (
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+                    <Text style={styles.prefsLabel}>Your AI Study Plan</Text>
+                    <Pressable onPress={fetchAIRecommendations}>
+                      <Text style={{ color: COLORS.accent.cyan, fontSize: FONT_SIZES.xs, fontFamily: FONTS.semiBold }}>Regenerate</Text>
+                    </Pressable>
+                  </View>
+                  {aiRecs.map((courseName, index) => (
+                    <View key={`${courseName}-${index}`} style={styles.courseCard}>
+                      <Text style={styles.courseNumber}>{index + 1}</Text>
+                      <Text style={styles.courseName}>{courseName}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          ) : (
+            <Text style={{ color: COLORS.text.secondary }}>
+              Next course recommendation will be displayed here.
+            </Text>
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -128,6 +275,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  diffIndicator: {
+    position: "absolute",
+    top: 4,
+    left: 4,
+    bottom: 4,
+    width: "25%",
+    backgroundColor: COLORS.text.primary,
+    borderRadius: BORDER_RADIUS.lg - 2,
+    shadowColor: COLORS.text.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   toggleButton: {
     flex: 1,
     paddingVertical: SPACING.md,
@@ -144,5 +305,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingBottom: 100, // Space for bottom tab bar
+  },
+  prefsContainer: {
+    marginBottom: SPACING.xl,
+  },
+  prefsLabel: {
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.sm,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    backgroundColor: COLORS.accent.cyan,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  primaryButtonText: {
+    color: COLORS.midnight.dark,
+    fontFamily: FONTS.bold,
+    fontSize: FONT_SIZES.sm,
+  },
+  courseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface.dark,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border.DEFAULT,
+  },
+  courseNumber: {
+    fontFamily: FONTS.bold,
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.accent.cyan,
+    marginRight: SPACING.md,
+    width: 24,
+  },
+  courseName: {
+    fontFamily: FONTS.medium,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.text.primary,
+    flex: 1,
   },
 });

@@ -37,11 +37,12 @@ export function MainTabNavigator() {
           right: SPACING.xl,
           height: 72,
           borderRadius: BORDER_RADIUS.xl,
-          backgroundColor: "rgba(18, 18, 18, 0.95)",
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           borderWidth: 1,
           borderColor: COLORS.border.DEFAULT,
           paddingBottom: 0,
+          overflow: "hidden",
           ...Platform.select({
             ios: {
               shadowColor: "#000",
@@ -54,6 +55,13 @@ export function MainTabNavigator() {
             },
           }),
         },
+        tabBarBackground: () => (
+          <BlurView 
+            intensity={80} 
+            tint="dark" 
+            style={[StyleSheet.absoluteFill, { borderRadius: BORDER_RADIUS.xl }]} 
+          />
+        ),
         tabBarActiveTintColor: COLORS.text.primary,
         tabBarInactiveTintColor: COLORS.text.muted,
         tabBarLabelStyle: {
@@ -89,16 +97,18 @@ export function MainTabNavigator() {
           }}
         />
       )}
-      <Tab.Screen
-        name="Advisor"
-        component={AdvisorScreen}
-        options={{
-          tabBarLabel: "Advisor",
-          tabBarIcon: ({ color, size, focused }) => (
-            <BrainCircuit color={focused ? COLORS.accent.cyan : color} size={size} strokeWidth={focused ? 2.5 : 1.8} />
-          ),
-        }}
-      />
+      {state.role !== "admin" && (
+        <Tab.Screen
+          name="Advisor"
+          component={AdvisorScreen}
+          options={{
+            tabBarLabel: "Advisor",
+            tabBarIcon: ({ color, size, focused }) => (
+              <BrainCircuit color={focused ? COLORS.accent.cyan : color} size={size} strokeWidth={focused ? 2.5 : 1.8} />
+            ),
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 }

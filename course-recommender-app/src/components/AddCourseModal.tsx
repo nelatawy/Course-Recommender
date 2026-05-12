@@ -33,8 +33,8 @@ import type { Course, CourseDifficulty } from "../store/CourseContext";
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const LEVELS: Course["level"][] = [0, 1, 2, 3, 4];
-const DIFFICULTIES: CourseDifficulty[] = ["Easy", "Medium", "Hard"];
+const LEVELS: Course["level"][] = [1, 2, 3, 4];
+const DIFFICULTIES: CourseDifficulty[] = ["Easy", "Medium", "Hard", "Very Hard"];
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -63,7 +63,7 @@ export function AddCourseModal({
   initialCourse,
 }: AddCourseModalProps) {
   const [name, setName] = useState("");
-  const [level, setLevel] = useState<Course["level"]>(0);
+  const [level, setLevel] = useState<Course["level"]>(1);
   const [difficulty, setDifficulty] = useState<CourseDifficulty>("Easy");
 
   /* Pre-fill fields when editing an existing course. */
@@ -74,7 +74,7 @@ export function AddCourseModal({
       setDifficulty(initialCourse.difficulty);
     } else {
       setName("");
-      setLevel(0);
+      setLevel(1);
       setDifficulty("Easy");
     }
   }, [initialCourse, visible]);
@@ -84,7 +84,7 @@ export function AddCourseModal({
     if (!trimmed) return;
     onSave(trimmed, level, difficulty);
     setName("");
-    setLevel(0);
+    setLevel(1);
     setDifficulty("Easy");
   };
 

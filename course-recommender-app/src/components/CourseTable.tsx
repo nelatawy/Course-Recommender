@@ -36,7 +36,7 @@ const HoverableButton = ({ onPress, children, style }: any) => {
   );
 };
 
-const CourseRow = ({ course, isPreferred, onEdit, onToggle, onTogglePreferred, onDelete, readOnly }: { course: Course; isPreferred: boolean; onEdit: () => void; onToggle: () => void; onTogglePreferred: () => void; onDelete: () => void; readOnly?: boolean }) => {
+const CourseRow = ({ course, isPreferred, onEdit, onToggle, onTogglePreferred, onDelete, readOnly, showStar }: { course: Course; isPreferred: boolean; onEdit: () => void; onToggle: () => void; onTogglePreferred: () => void; onDelete: () => void; readOnly?: boolean; showStar?: boolean }) => {
   const scale = useSharedValue(1);
   const bgColor = useSharedValue<string>(COLORS.surface.DEFAULT);
 
@@ -69,7 +69,7 @@ const CourseRow = ({ course, isPreferred, onEdit, onToggle, onTogglePreferred, o
         </HoverableButton>
         <View style={styles.info}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
-            <AnimatedStar isPreferred={isPreferred} onPress={onTogglePreferred} />
+            {showStar && <AnimatedStar isPreferred={isPreferred} onPress={onTogglePreferred} />}
             <Text style={styles.name}>{course.name}</Text>
           </View>
           <View style={styles.badges}>
@@ -179,6 +179,7 @@ export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
                 course={{ ...course, taken: isCourseTaken(course.id) }}
                 isPreferred={state.preferredCourses.includes(course.id)}
                 readOnly={readOnly}
+                showStar={state.role === "student"}
                 onEdit={() => {
                   setEditingCourse(course);
                   setModalVisible(true);

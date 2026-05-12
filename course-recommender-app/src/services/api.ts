@@ -28,10 +28,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 // Auth
 // ---------------------------------------------------------------------------
 
-export async function signUp(name: string, studentId: string) {
+export async function signUp(name: string, studentId: string, level: number) {
   return fetchApi("/auth/signup/", {
     method: "POST",
-    body: JSON.stringify({ name, student_id: studentId }),
+    body: JSON.stringify({ name, student_id: studentId, level }),
   });
 }
 
@@ -112,5 +112,22 @@ export async function toggleCompletedCourse(studentId: string | number, courseId
   return fetchApi(`/students/${studentId}/completed_courses/`, {
     method: "POST",
     body: JSON.stringify({ course_id: courseId }),
+  });
+}
+
+export async function updateStudentPreferences(studentId: string | number, data: { current_level?: number, preferred_difficulty?: string }) {
+  return fetchApi(`/students/${studentId}/profile/`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Recommendations
+// ---------------------------------------------------------------------------
+
+export async function getAIRecommendations(studentId: string | number) {
+  return fetchApi(`/recommend/ai/${studentId}/`, {
+    method: "GET",
   });
 }
