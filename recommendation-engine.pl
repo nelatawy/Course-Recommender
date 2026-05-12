@@ -161,7 +161,8 @@ can_take(Course) :-
     courses(Courses), %it must be a course to begin with
     member(Course, Courses),
     prereqs_satisfied(Course),
-    eligible(Course).
+    eligible(Course),
+    \+taken(Course).
 % Recommendation levels
 
 % Level 4 -- Not Very Difficult and In the Preferred Group
