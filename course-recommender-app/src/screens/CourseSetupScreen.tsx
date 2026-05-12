@@ -1,13 +1,14 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BookOpen } from "lucide-react-native";
 import { COLORS, FONTS, FONT_SIZES, SPACING } from "../constants/theme";
+import { CourseTable } from "../components/CourseTable";
+import { PrerequisiteGraph } from "../components/PrerequisiteGraph";
+import { CourseGrouping } from "../components/CourseGrouping";
 
 /**
  * Course Setup screen -- container for the course table,
  * dependency graph, and course grouping sections.
- * Placeholder implementation for Phase 2 checkpoint.
  */
 export function CourseSetupScreen() {
   const insets = useSafeAreaInsets();
@@ -20,12 +21,14 @@ export function CourseSetupScreen() {
           Add your courses, define prerequisites, and organise groups.
         </Text>
       </View>
-      <View style={styles.placeholderContainer}>
-        <BookOpen color={COLORS.text.muted} size={48} strokeWidth={1.2} />
-        <Text style={styles.placeholderText}>
-          Course management coming in Phase 3
-        </Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <CourseTable />
+        <PrerequisiteGraph />
+        <CourseGrouping />
+      </ScrollView>
     </View>
   );
 }
@@ -53,16 +56,8 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     marginTop: SPACING.xs,
   },
-  placeholderContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.base,
-    paddingBottom: 100,
-  },
-  placeholderText: {
-    fontFamily: FONTS.regular,
-    fontSize: FONT_SIZES.base,
-    color: COLORS.text.muted,
+  scrollContent: {
+    paddingBottom: 120, // Extra space for the bottom tab bar
   },
 });
+

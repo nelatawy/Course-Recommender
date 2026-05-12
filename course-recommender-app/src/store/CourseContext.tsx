@@ -4,12 +4,13 @@ import React, { createContext, useContext, useReducer, ReactNode } from "react";
 /*  Data Models                                                        */
 /* ------------------------------------------------------------------ */
 
+export type CourseDifficulty = "Easy" | "Medium" | "Hard";
+
 export interface Course {
   id: string;
   name: string;
-  credits: number;
-  level: 1 | 2 | 3 | 4;
-  department: string;
+  level: 0 | 1 | 2 | 3 | 4;
+  difficulty: CourseDifficulty;
   taken: boolean;
 }
 

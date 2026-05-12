@@ -172,3 +172,28 @@ export const API_ENDPOINTS = {
   /** Gemini AI recommendation engine. */
   aiRecommend: `${API_BASE_URL}/recommend/ai`,
 } as const;
+
+/* ------------------------------------------------------------------ */
+/*  Course-Level Colour Mapping                                        */
+/* ------------------------------------------------------------------ */
+
+/** Colour assigned to each academic level (0 through 4). */
+export const LEVEL_COLORS: Record<number, string> = {
+  0: "#6B7280", // Slate gray   -- introductory / foundation
+  1: "#3B82F6", // Blue         -- first year
+  2: "#10B981", // Emerald      -- second year
+  3: "#F59E0B", // Amber        -- third year
+  4: "#F43F5E", // Rose         -- fourth year / capstone
+} as const;
+
+/* ------------------------------------------------------------------ */
+/*  Difficulty Colour Mapping                                          */
+/* ------------------------------------------------------------------ */
+
+/** Colour assigned to each difficulty grade. */
+export const DIFFICULTY_COLORS: Record<string, string> = {
+  Easy: "#10B981",   // Emerald
+  Medium: "#F59E0B", // Amber
+  Hard: "#F43F5E",   // Rose
+} as const;
+
