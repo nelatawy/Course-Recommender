@@ -92,46 +92,46 @@ in_group(X,X).
 % assert(student_pref_diff(difficulty))
 
 
-setup_test_data :-
-    % Clean up any previous test data
-    retractall(courses(_)),
-    retractall(prereq(_, _)),
-    retractall(taken(_)),
-    retractall(difficulty(_, _)),
-    retractall(level(_, _)),
-    retractall(student_level(_)),
-    retractall(student_pref_diff(_)),
-    retractall(preferred(_)),
-    retractall(in_group(_,_)),
+% setup_test_data :-
+%     % Clean up any previous test data
+%     retractall(courses(_)),
+%     retractall(prereq(_, _)),
+%     retractall(taken(_)),
+%     retractall(difficulty(_, _)),
+%     retractall(level(_, _)),
+%     retractall(student_level(_)),
+%     retractall(student_pref_diff(_)),
+%     retractall(preferred(_)),
+%     retractall(in_group(_,_)),
 
-    % Catalog
-    assertz(courses(['Intro', 'Calculus', 'CS101', 'Algorithms', 'AI'])),
+%     % Catalog
+%     assertz(courses(['Intro', 'Calculus', 'CS101', 'Algorithms', 'AI'])),
     
-    % Prerequisites
-    assertz(prereq('Intro', 'Calculus')),
-    assertz(prereq('Intro', 'CS101')),
-    assertz(prereq('CS101', 'Algorithms')),
-    assertz(prereq('Calculus', 'AI')),
-    assertz(prereq('Algorithms', 'AI')),
+%     % Prerequisites
+%     assertz(prereq('Intro', 'Calculus')),
+%     assertz(prereq('Intro', 'CS101')),
+%     assertz(prereq('CS101', 'Algorithms')),
+%     assertz(prereq('Calculus', 'AI')),
+%     assertz(prereq('Algorithms', 'AI')),
 
-    % Course Attributes (Course, Value)
-    assertz(difficulty('Calculus', 3)), % Hard
-    assertz(difficulty('CS101', 1)),    % Easy
-    assertz(difficulty('Algorithms', 2)),
+%     % Course Attributes (Course, Value)
+%     assertz(difficulty('Calculus', 3)), % Hard
+%     assertz(difficulty('CS101', 1)),    % Easy
+%     assertz(difficulty('Algorithms', 2)),
     
-    assertz(level('Intro', 1)),
-    assertz(level('Calculus', 2)),
-    assertz(level('CS101', 2)),
-    assertz(level('Algorithms', 3)),
+%     assertz(level('Intro', 1)),
+%     assertz(level('Calculus', 2)),
+%     assertz(level('CS101', 2)),
+%     assertz(level('Algorithms', 3)),
 
-    % Student State
-    assertz(student_level(2)),        % Can take level 1 and 2
-    assertz(student_pref_diff(2)),    % Prefers difficulty 1 or 2
-    assertz(taken('Intro')),          % Finished Intro
-    assertz(preferred('Math')),       % Likes Math group
+%     % Student State
+%     assertz(student_level(2)),        % Can take level 1 and 2
+%     assertz(student_pref_diff(2)),    % Prefers difficulty 1 or 2
+%     assertz(taken('Intro')),          % Finished Intro
+%     assertz(preferred('Math')),       % Likes Math group
 
-    % Groups
-    assertz(in_group('Calculus', 'Math')).
+%     % Groups
+%     assertz(in_group('Calculus', 'Math')).
 
 
 
