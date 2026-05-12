@@ -76,8 +76,8 @@ class StudentAdmin(admin.ModelAdmin):
             {
                 "fields": ("preferred_subjects_input","preferred_difficulty"),
                 "description": (
-                    "Subject/topic areas this student wants to prioritise.  "
-                    "Prolog uses these to surface preferred courses first."
+                    "Course IDs the student has starred as interesting.  "
+                    "Managed by the student via the mobile app."
                 ),
             },
         ),
