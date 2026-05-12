@@ -74,7 +74,7 @@ class StudentAdmin(admin.ModelAdmin):
         (
             "Preferences",
             {
-                "fields": ("preferred_subjects_input",),
+                "fields": ("preferred_subjects_input","preferred_difficulty"),
                 "description": (
                     "Subject/topic areas this student wants to prioritise.  "
                     "Prolog uses these to surface preferred courses first."
