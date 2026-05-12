@@ -59,6 +59,9 @@ def _course_to_dict(course):
 
 def _student_to_dict(student):
     """Serialise a ``Student`` instance to a plain dictionary."""
+    # Filter out any legacy numeric IDs to ensure Prolog only gets names
+    preferred_subjects = [s for s in (student.preferred_subjects or []) if not str(s).isdigit()]
+    
     return {
         'id': student.id,
         'name': student.name,
@@ -69,7 +72,7 @@ def _student_to_dict(student):
         'completed_courses': list(
             student.completed_courses.values_list('id', flat=True)
         ),
-        'preferred_subjects': student.preferred_subjects or [],
+        'preferred_subjects': preferred_subjects,
         'created_at': student.created_at.isoformat(),
         'updated_at': student.updated_at.isoformat(),
     }
@@ -511,15 +514,23 @@ def toggle_preferred_subject(request, student_pk):
 
     subjects = student.preferred_subjects or []
     course_name = course.name.lower()
+    course_id_str = str(course.id)
 
-    if course_name in subjects:
-        subjects.remove(course_name)
+    # Clean up: remove both the name and the ID string if they exist
+    # This handles legacy data where IDs might have been stored.
+    is_preferred = (course_name in subjects) or (course_id_str in subjects)
+
+    if is_preferred:
+        # Filter out both to be safe
+        subjects = [s for s in subjects if s != course_name and s != course_id_str]
         preferred = False
     else:
         subjects.append(course_name)
         preferred = True
 
-    student.preferred_subjects = subjects
+    # Final sweep: ensure no numeric-only strings remain (extra safety for Prolog)
+    # Most IDs are numeric, while most course names contain letters.
+    student.preferred_subjects = [s for s in subjects if not s.isdigit()]
     student.save()
 
     return JsonResponse({
