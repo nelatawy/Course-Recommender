@@ -24,4 +24,5 @@ urlpatterns = [
     # Student endpoints
     path('api/students/<int:student_pk>/profile/', api_views.update_student_profile),
     path('api/students/<int:student_pk>/completed_courses/', api_views.toggle_completed_course),
+    path('api/students/<int:student_pk>/preferred_difficulty/', api_views.update_student_difficulty),
 ]

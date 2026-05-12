@@ -454,3 +454,25 @@ def toggle_completed_course(request, student_pk):
             student.completed_courses.values_list('id', flat=True)
         ),
     })
+
+
+@require_http_methods(['POST'])
+def update_student_difficulty(request, student_pk):
+    """Update the student's preferred difficulty ceiling."""
+    try:
+        student = Student.objects.get(id=student_pk)
+    except Student.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Student not found.'}, status=404)
+
+    data = _parse_json_body(request)
+    if not data:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON body.'}, status=400)
+
+    difficulty = data.get('preferred_difficulty', '').strip()
+    valid = [c[0] for c in Student.DIFFICULTY_CEILING_CHOICES]
+    if difficulty not in valid:
+        return JsonResponse({'status': 'error', 'message': f'Must be one of {valid}.'}, status=400)
+
+    student.preferred_difficulty = difficulty
+    student.save()
+    return JsonResponse({'status': 'success', 'student': _student_to_dict(student)})
