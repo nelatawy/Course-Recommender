@@ -31,7 +31,7 @@ export interface Student {
   current_level: number;
   preferred_difficulty: CourseDifficulty;
   completed_courses: string[]; // Course IDs (stringified)
-  preferred_subjects: string[]; // Course IDs the student starred (stringified)
+  preferred_subjects: string[]; // Course NAMES the student starred (lowercase)
 }
 
 /* ------------------------------------------------------------------ */
@@ -105,7 +105,7 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
           ...s,
           id: String(s.id),
           completed_courses: (s.completed_courses || []).map((id: any) => String(id)),
-          preferred_subjects: (s.preferred_subjects || []).map((id: any) => String(id)),
+          preferred_subjects: s.preferred_subjects || [],
         },
         adminKey: null,
       };
@@ -192,16 +192,16 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
 
     case "TOGGLE_PREFERRED_COURSE": {
       if (!state.currentStudent) return state;
-      const courseId = action.payload;
+      const courseName = action.payload;
       const current = state.currentStudent.preferred_subjects || [];
-      const isPreferred = current.includes(courseId);
+      const isPreferred = current.includes(courseName);
       return {
         ...state,
         currentStudent: {
           ...state.currentStudent,
           preferred_subjects: isPreferred
-            ? current.filter(id => id !== courseId)
-            : [...current, courseId],
+            ? current.filter(name => name !== courseName)
+            : [...current, courseName],
         },
       };
     }

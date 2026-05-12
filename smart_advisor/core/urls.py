@@ -6,6 +6,7 @@ urlpatterns = [
     # Existing recommendation endpoints
     path('api/recommend/prolog/<int:student_id>/', views.get_prolog_recommendations),
     path('api/recommend/ai/<int:student_id>/', views.get_ai_recommendations),
+    path('api/recommend/ai/<int:student_id>/next/', views.get_ai_next_course),
 
     # Auth endpoints
     path('api/auth/signup/', api_views.auth_signup),
