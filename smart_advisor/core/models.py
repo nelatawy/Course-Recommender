@@ -19,6 +19,13 @@ class Course(UniversalTimeObserver):
         ("very_hard", "Very Hard"),
     ]
 
+    DIFFICULTY_TO_PROLOG = {
+        "easy": 0,
+        "medium": 1,
+        "hard": 2,
+        "very_hard": 3,
+    }
+
     name = models.CharField(max_length=150, unique=True)
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default="medium")
     level = models.IntegerField(choices=LEVEL_CHOICES)
