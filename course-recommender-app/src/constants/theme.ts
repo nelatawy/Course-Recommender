@@ -163,8 +163,11 @@ export const ANIMATION = {
 /*  API Endpoints (stubs for backend wiring)                           */
 /* ------------------------------------------------------------------ */
 
+import { Platform } from 'react-native';
+
 /** Base URL for the Django smart_advisor backend. */
-export const API_BASE_URL = "http://localhost:8000/api";
+// Use 10.0.2.2 for Android emulators, localhost for iOS simulators / Web
+export const API_BASE_URL = Platform.OS === 'android' ? "http://10.0.2.2:8000/api" : "http://localhost:8000/api";
 
 export const API_ENDPOINTS = {
   /** Prolog-based recommendation engine. */

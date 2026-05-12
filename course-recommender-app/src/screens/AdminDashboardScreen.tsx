@@ -9,11 +9,7 @@ import { useCourseStore } from "../store/CourseContext";
 import { Pressable } from "react-native";
 import { LogOut } from "lucide-react-native";
 
-/**
- * Course Setup screen -- container for the course table,
- * dependency graph, and course grouping sections.
- */
-export function CourseSetupScreen() {
+export function AdminDashboardScreen() {
   const insets = useSafeAreaInsets();
   const { dispatch } = useCourseStore();
 
@@ -22,9 +18,9 @@ export function CourseSetupScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.headerTitle}>Course Catalog</Text>
+            <Text style={styles.headerTitle}>Admin Dashboard</Text>
             <Text style={styles.headerSubtitle}>
-              View courses, prerequisites, and groups.
+              Manage courses, prerequisites, and groups.
             </Text>
           </View>
           <Pressable 
@@ -39,9 +35,9 @@ export function CourseSetupScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <CourseTable readOnly={true} />
-        <PrerequisiteGraph readOnly={true} />
-        <CourseGrouping readOnly={true} />
+        <CourseTable readOnly={false} />
+        <PrerequisiteGraph readOnly={false} />
+        <CourseGrouping readOnly={false} />
       </ScrollView>
     </View>
   );
@@ -81,7 +77,6 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   scrollContent: {
-    paddingBottom: 120, // Extra space for the bottom tab bar
+    paddingBottom: 120,
   },
 });
-

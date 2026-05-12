@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 
-from pyswip import Prolog
+try:
+    from pyswip import Prolog
+except Exception as e:
+    Prolog = None
+    print(f"Warning: Failed to import pyswip ({e}). Prolog recommendations will fail.")
 
 
 class CurriculumCycleError(Exception):
@@ -23,6 +27,8 @@ class PrologAdapter(LogicEngineInterface):
 
     """Initialize a new prolog thread using pyswip"""
     def __enter__(self):
+        if Prolog is None:
+            raise RuntimeError("Prolog is not installed. Cannot use PrologAdapter.")
         self.prolog_thread = Prolog()
         self.prolog_thread._init_prolog_thread()
         return self

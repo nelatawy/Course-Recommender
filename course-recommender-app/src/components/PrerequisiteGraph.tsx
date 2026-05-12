@@ -37,6 +37,7 @@ interface DraggableNodeProps {
   initialY: number;
   onDrag: (id: string, x: number, y: number) => void;
   onRemoveNode: (id: string) => void;
+  readOnly?: boolean;
 }
 
 function DraggableNode({
@@ -47,6 +48,7 @@ function DraggableNode({
   initialY,
   onDrag,
   onRemoveNode,
+  readOnly,
 }: DraggableNodeProps) {
   const x = useSharedValue(initialX);
   const y = useSharedValue(initialY);
@@ -59,6 +61,7 @@ function DraggableNode({
       contextY.value = y.value;
     })
     .onUpdate((event) => {
+      if (readOnly) return;
       x.value = contextX.value + event.translationX;
       y.value = contextY.value + event.translationY;
       runOnJS(onDrag)(id, x.value, y.value);
@@ -81,20 +84,22 @@ function DraggableNode({
           <Text style={styles.nodeText} numberOfLines={1}>
             {name}
           </Text>
-          <Pressable
-            style={styles.removeNodeBtn}
-            onPress={() => onRemoveNode(id)}
-            hitSlop={8}
-          >
-            <Trash2 color={COLORS.accent.rose} size={14} />
-          </Pressable>
+          {!readOnly && (
+            <Pressable
+              style={styles.removeNodeBtn}
+              onPress={() => onRemoveNode(id)}
+              hitSlop={8}
+            >
+              <Trash2 color={COLORS.accent.rose} size={14} />
+            </Pressable>
+          )}
         </View>
       </Animated.View>
     </GestureDetector>
   );
 }
 
-export function PrerequisiteGraph() {
+export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) {
   const { state, dispatch } = useCourseStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [nodePositions, setNodePositions] = useState<Record<string, NodePos>>({});
@@ -173,10 +178,12 @@ export function PrerequisiteGraph() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Prerequisites</Text>
-        <Pressable style={styles.addBtn} onPress={() => setModalVisible(true)}>
-          <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
-          <Text style={styles.addBtnText}>Add Edge</Text>
-        </Pressable>
+        {!readOnly && (
+          <Pressable style={styles.addBtn} onPress={() => setModalVisible(true)}>
+            <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
+            <Text style={styles.addBtnText}>Add Edge</Text>
+          </Pressable>
+        )}
       </View>
 
       <Text style={styles.subtitle}>
@@ -190,7 +197,7 @@ export function PrerequisiteGraph() {
           </View>
         ) : (
           <>
-            <Svg style={StyleSheet.absoluteFill}>
+            <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
               <Defs>
                 <Marker
                   id="arrow"
@@ -219,6 +226,7 @@ export function PrerequisiteGraph() {
                   initialX={pos.x}
                   initialY={pos.y}
                   onDrag={handleDrag}
+                  readOnly={readOnly}
                   onRemoveNode={(id) => dispatch({ type: "REMOVE_COURSE", payload: id })}
                 />
               );

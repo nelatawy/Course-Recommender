@@ -1,4 +1,4 @@
-from smart_advisor.core.student_advisor_strategy.master_advisor_strategy import MasterAdvisorStrategy
+from core.student_advisor_strategy.master_advisor_strategy import MasterAdvisorStrategy
 
 import json
 import google.generativeai as genai

@@ -1,5 +1,5 @@
-from smart_advisor.core.architecture import LogicEngineInterface, RankingStrategy
-from smart_advisor.core.student_advisor_strategy.master_advisor_strategy import MasterAdvisorStrategy
+from core.architecture import LogicEngineInterface, RankingStrategy
+from core.student_advisor_strategy.master_advisor_strategy import MasterAdvisorStrategy
 
 # This Facade wraps Person 3's work to match the Master Organizer
 class HybridPrologEngine(MasterAdvisorStrategy):

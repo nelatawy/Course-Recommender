@@ -144,7 +144,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BORDER_RADIUS["2xl"],
     paddingHorizontal: SPACING.xl, paddingTop: SPACING.xl, paddingBottom: SPACING["3xl"],
     borderWidth: 1, borderColor: COLORS.border.DEFAULT, borderBottomWidth: 0,
-    maxHeight: "80%",
+    maxHeight: "90%",
+    width: "100%",
   },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACING.xl },
   title: { fontFamily: FONTS.bold, fontSize: FONT_SIZES.xl, color: COLORS.text.primary, letterSpacing: -0.5 },
@@ -156,7 +157,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular, fontSize: FONT_SIZES.base, color: COLORS.text.primary,
     borderWidth: 1, borderColor: COLORS.border.DEFAULT,
   },
-  courseList: { maxHeight: 220, marginBottom: SPACING.lg },
+  courseList: { maxHeight: 450, minHeight: 200, marginBottom: SPACING.lg },
   courseRow: {
     flexDirection: "row", alignItems: "center", gap: SPACING.sm,
     paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm,

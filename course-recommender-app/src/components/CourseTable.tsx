@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
-import { Plus, Trash2, Check } from "lucide-react-native";
+import { Plus, Trash2, Check, Star } from "lucide-react-native";
 import LottieView from "lottie-react-native";
 import {
   COLORS,
@@ -14,6 +14,7 @@ import {
 } from "../constants/theme";
 import { useCourseStore, Course } from "../store/CourseContext";
 import { AddCourseModal } from "./AddCourseModal";
+import * as api from "../services/api";
 
 const HoverableButton = ({ onPress, children, style }: any) => {
   const scale = useSharedValue(1);
@@ -35,9 +36,9 @@ const HoverableButton = ({ onPress, children, style }: any) => {
   );
 };
 
-const CourseRow = ({ course, onEdit, onToggle, onDelete }: { course: Course; onEdit: () => void; onToggle: () => void; onDelete: () => void }) => {
+const CourseRow = ({ course, isPreferred, onEdit, onToggle, onTogglePreferred, onDelete, readOnly }: { course: Course; isPreferred: boolean; onEdit: () => void; onToggle: () => void; onTogglePreferred: () => void; onDelete: () => void; readOnly?: boolean }) => {
   const scale = useSharedValue(1);
-  const bgColor = useSharedValue(COLORS.surface.DEFAULT);
+  const bgColor = useSharedValue<string>(COLORS.surface.DEFAULT);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -48,12 +49,14 @@ const CourseRow = ({ course, onEdit, onToggle, onDelete }: { course: Course; onE
     <Animated.View style={[styles.row, animatedStyle]}>
       <Pressable
         style={styles.rowPressable}
-        onPress={onEdit}
+        onPress={readOnly ? undefined : onEdit}
         onHoverIn={() => {
+          if (readOnly) return;
           scale.value = withSpring(1.01, { damping: 20 });
           bgColor.value = withTiming(COLORS.surface.light, { duration: 200 });
         }}
         onHoverOut={() => {
+          if (readOnly) return;
           scale.value = withSpring(1);
           bgColor.value = withTiming(COLORS.surface.DEFAULT, { duration: 200 });
         }}
@@ -65,7 +68,10 @@ const CourseRow = ({ course, onEdit, onToggle, onDelete }: { course: Course; onE
           {course.taken && <Check color={COLORS.text.inverse} size={14} strokeWidth={3} />}
         </HoverableButton>
         <View style={styles.info}>
-          <Text style={styles.name}>{course.name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
+            <AnimatedStar isPreferred={isPreferred} onPress={onTogglePreferred} />
+            <Text style={styles.name}>{course.name}</Text>
+          </View>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: LEVEL_COLORS[course.level] }]}>
               <Text style={styles.badgeText}>L{course.level}</Text>
@@ -75,16 +81,49 @@ const CourseRow = ({ course, onEdit, onToggle, onDelete }: { course: Course; onE
             </View>
           </View>
         </View>
-        <HoverableButton onPress={onDelete} style={styles.deleteBtn}>
-          <Trash2 color={COLORS.accent.rose} size={18} />
-        </HoverableButton>
+
+        {!readOnly && (
+          <HoverableButton onPress={onDelete} style={styles.deleteBtn}>
+            <Trash2 color={COLORS.accent.rose} size={18} />
+          </HoverableButton>
+        )}
       </Pressable>
     </Animated.View>
   );
 };
 
-export function CourseTable() {
-  const { state, dispatch } = useCourseStore();
+const AnimatedStar = ({ isPreferred, onPress }: { isPreferred: boolean; onPress: (e: any) => void }) => {
+  const scale = useSharedValue(1);
+
+  const handlePress = (e: any) => {
+    e.stopPropagation();
+    // Bouncy pop animation
+    scale.value = withSpring(1.4, { damping: 12, stiffness: 300 }, () => {
+      scale.value = withSpring(1);
+    });
+    onPress(e);
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Pressable onPress={handlePress} hitSlop={8}>
+      <Animated.View style={animatedStyle}>
+        <Star 
+          color={isPreferred ? COLORS.accent.amber : COLORS.text.muted} 
+          fill={isPreferred ? COLORS.accent.amber : "transparent"} 
+          size={18} 
+          strokeWidth={isPreferred ? 2 : 1.5}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+};
+
+export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
+  const { state, dispatch, isCourseTaken } = useCourseStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
@@ -112,12 +151,14 @@ export function CourseTable() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Courses</Text>
-        <HoverableButton onPress={() => { setEditingCourse(null); setModalVisible(true); }}>
-          <View style={styles.addBtn}>
-            <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
-            <Text style={styles.addBtnText}>Add Course</Text>
-          </View>
-        </HoverableButton>
+        {!readOnly && (
+          <HoverableButton onPress={() => { setEditingCourse(null); setModalVisible(true); }}>
+            <View style={styles.addBtn}>
+              <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
+              <Text style={styles.addBtnText}>Add Course</Text>
+            </View>
+          </HoverableButton>
+        )}
       </View>
 
       {state.courses.length === 0 ? (
@@ -133,12 +174,31 @@ export function CourseTable() {
       ) : (
         <View style={styles.list}>
           {state.courses.map((course, index) => (
-            <Animated.View key={course.id} entering={FadeIn.delay(index * 30)}>
+            <Animated.View key={course.id} entering={FadeIn.delay(index * 50)}>
               <CourseRow
-                course={course}
-                onEdit={() => { setEditingCourse(course); setModalVisible(true); }}
-                onToggle={() => dispatch({ type: "TOGGLE_TAKEN", payload: course.id })}
-                onDelete={() => dispatch({ type: "REMOVE_COURSE", payload: course.id })}
+                course={{ ...course, taken: isCourseTaken(course.id) }}
+                isPreferred={state.preferredCourses.includes(course.id)}
+                readOnly={readOnly}
+                onEdit={() => {
+                  setEditingCourse(course);
+                  setModalVisible(true);
+                }}
+                onToggle={async () => {
+                  if (state.currentStudent) {
+                    await api.toggleCompletedCourse(state.currentStudent.id, course.id);
+                    const updated = await api.toggleCompletedCourse(state.currentStudent.id, course.id);
+                    dispatch({ type: "SET_COMPLETED_COURSES", payload: updated.completed_courses || [] });
+                    const res = await api.signIn(state.currentStudent.student_id);
+                    dispatch({ type: "SET_AUTH_STUDENT", payload: res.student });
+                  }
+                }}
+                onTogglePreferred={() => {
+                  dispatch({ type: "TOGGLE_PREFERRED_COURSE", payload: course.id });
+                }}
+                onDelete={async () => {
+                  await api.deleteCourse(course.id, state.adminKey!);
+                  dispatch({ type: "REMOVE_COURSE", payload: course.id });
+                }}
               />
             </Animated.View>
           ))}
@@ -173,5 +233,10 @@ const styles = StyleSheet.create({
   badges: { flexDirection: "row", gap: SPACING.xs },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: BORDER_RADIUS.sm },
   badgeText: { fontFamily: FONTS.bold, fontSize: 10, color: COLORS.text.inverse },
-  deleteBtn: { padding: SPACING.xs },
+  deleteBtn: {
+    padding: SPACING.xs,
+  },
+  starBtn: {
+    padding: SPACING.xs,
+  },
 });

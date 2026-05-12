@@ -1,11 +1,12 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { OnboardingScreen } from "../screens/OnboardingScreen";
+import { AuthScreen } from "../screens/AuthScreen";
 import { MainTabNavigator } from "./MainTabNavigator";
 import { COLORS } from "../constants/theme";
+import { useCourseStore } from "../store/CourseContext";
 
 export type RootStackParamList = {
-  Onboarding: undefined;
+  Auth: undefined;
   Main: undefined;
 };
 
@@ -16,17 +17,21 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
  * Starts with the onboarding splash, then transitions to the main tab navigator.
  */
 export function RootNavigator() {
+  const { state } = useCourseStore();
+
   return (
     <Stack.Navigator
-      initialRouteName="Onboarding"
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: COLORS.midnight.DEFAULT },
         animation: "fade",
       }}
     >
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Main" component={MainTabNavigator} />
+      {state.role === null ? (
+        <Stack.Screen name="Auth" component={AuthScreen} />
+      ) : (
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+      )}
     </Stack.Navigator>
   );
 }

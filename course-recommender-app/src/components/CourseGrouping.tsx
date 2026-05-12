@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Plus, Trash2, Users } from "lucide-react-native";
+import { Plus, Trash2, Users, Star } from "lucide-react-native";
 import {
   COLORS,
   FONTS,
@@ -12,7 +12,7 @@ import {
 import { useCourseStore, CourseGroup } from "../store/CourseContext";
 import { AddGroupModal } from "./AddGroupModal";
 
-export function CourseGrouping() {
+export function CourseGrouping({ readOnly = false }: { readOnly?: boolean }) {
   const { state, dispatch } = useCourseStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingGroup, setEditingGroup] = useState<CourseGroup | null>(null);
@@ -49,37 +49,75 @@ export function CourseGrouping() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Course Groups</Text>
-        <Pressable style={styles.addBtn} onPress={openAddModal}>
-          <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
-          <Text style={styles.addBtnText}>Add Group</Text>
-        </Pressable>
+        {!readOnly && (
+          <Pressable style={styles.addBtn} onPress={openAddModal}>
+            <Plus color={COLORS.text.inverse} size={16} strokeWidth={3} />
+            <Text style={styles.addBtnText}>Add Group</Text>
+          </Pressable>
+        )}
       </View>
 
-      {state.groups.length === 0 ? (
+      {state.groups.length === 0 && !readOnly ? (
         <View style={styles.emptyState}>
           <Users color={COLORS.text.muted} size={32} style={{ marginBottom: SPACING.sm }} />
           <Text style={styles.emptyText}>Create groups to organize courses.</Text>
         </View>
       ) : (
         <View style={styles.grid}>
+          {readOnly && (
+            <Animated.View entering={FadeInDown.springify()}>
+              <Pressable style={[styles.card, { borderColor: COLORS.accent.amber, borderWidth: 1 }]}>
+                <View style={styles.cardHeader}>
+                  <Text style={[styles.groupName, { color: COLORS.accent.amber }]}>Preferred List</Text>
+                </View>
+                <Text style={styles.courseCount}>
+                  {state.preferredCourses.length} {state.preferredCourses.length === 1 ? "Course" : "Courses"}
+                </Text>
+              </Pressable>
+            </Animated.View>
+          )}
           {state.groups.map((group, index) => (
             <Animated.View
               key={group.id}
               entering={FadeInDown.delay(index * 50).springify()}
             >
-              <Pressable style={styles.card} onPress={() => openEditModal(group)}>
+              <Pressable style={styles.card} onPress={() => !readOnly && openEditModal(group)}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.groupName}>{group.name}</Text>
-                  <Pressable
-                    style={styles.deleteBtn}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      dispatch({ type: "REMOVE_GROUP", payload: group.id });
-                    }}
-                    hitSlop={8}
-                  >
-                    <Trash2 color={COLORS.accent.rose} size={16} />
-                  </Pressable>
+                  
+                  {readOnly && group.courseIds.length > 0 && (
+                    <Pressable
+                      style={styles.starBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        const isPreferred = group.courseIds.every(id => state.preferredCourses.includes(id));
+                        dispatch({
+                          type: "TOGGLE_GROUP_PREFERRED",
+                          payload: { courseIds: group.courseIds, makePreferred: !isPreferred }
+                        });
+                      }}
+                      hitSlop={8}
+                    >
+                      <Star 
+                        color={group.courseIds.every(id => state.preferredCourses.includes(id)) ? COLORS.accent.amber : COLORS.text.muted} 
+                        fill={group.courseIds.every(id => state.preferredCourses.includes(id)) ? COLORS.accent.amber : "transparent"} 
+                        size={18} 
+                      />
+                    </Pressable>
+                  )}
+
+                  {!readOnly && (
+                    <Pressable
+                      style={styles.deleteBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        dispatch({ type: "REMOVE_GROUP", payload: group.id });
+                      }}
+                      hitSlop={8}
+                    >
+                      <Trash2 color={COLORS.accent.rose} size={16} />
+                    </Pressable>
+                  )}
                 </View>
                 <Text style={styles.courseCount}>
                   {group.courseIds.length} {group.courseIds.length === 1 ? "Course" : "Courses"}
@@ -175,6 +213,9 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
   deleteBtn: {
+    padding: 2,
+  },
+  starBtn: {
     padding: 2,
   },
 });

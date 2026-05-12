@@ -5,10 +5,8 @@ from .architecture import (
     FunctionalRanking,
     CurriculumCycleError
 )
-from .student_advisor_strategy import (
-    AIEngineAdapter,
-    HybridPrologEngine
-)
+from .student_advisor_strategy.ai_engine_adapter_strategy import AIEngineAdapter
+from .student_advisor_strategy.hyprid_prolog_strategy import HybridPrologEngine
 
 def _execute_plan(student, all_courses, engine: 'MasterAdvisorStrategy', engine_name: str):
     """Helper function to execute either engine and save the receipt."""

@@ -6,11 +6,14 @@ import { BookOpen, BrainCircuit } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CourseSetupScreen } from "../screens/CourseSetupScreen";
 import { AdvisorScreen } from "../screens/AdvisorScreen";
+import { AdminDashboardScreen } from "../screens/AdminDashboardScreen";
 import { COLORS, FONTS, FONT_SIZES, SPACING, BORDER_RADIUS } from "../constants/theme";
+import { useCourseStore } from "../store/CourseContext";
 
 export type MainTabParamList = {
   CourseSetup: undefined;
   Advisor: undefined;
+  AdminDashboard: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -21,6 +24,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
  */
 export function MainTabNavigator() {
   const insets = useSafeAreaInsets();
+  const { state } = useCourseStore();
 
   return (
     <Tab.Navigator
@@ -62,16 +66,29 @@ export function MainTabNavigator() {
         },
       }}
     >
-      <Tab.Screen
-        name="CourseSetup"
-        component={CourseSetupScreen}
-        options={{
-          tabBarLabel: "Courses",
-          tabBarIcon: ({ color, size, focused }) => (
-            <BookOpen color={focused ? COLORS.accent.cyan : color} size={size} strokeWidth={focused ? 2.5 : 1.8} />
-          ),
-        }}
-      />
+      {state.role === "admin" ? (
+        <Tab.Screen
+          name="AdminDashboard"
+          component={AdminDashboardScreen}
+          options={{
+            tabBarLabel: "Dashboard",
+            tabBarIcon: ({ color, size, focused }) => (
+              <BookOpen color={focused ? COLORS.accent.cyan : color} size={size} strokeWidth={focused ? 2.5 : 1.8} />
+            ),
+          }}
+        />
+      ) : (
+        <Tab.Screen
+          name="CourseSetup"
+          component={CourseSetupScreen}
+          options={{
+            tabBarLabel: "Catalog",
+            tabBarIcon: ({ color, size, focused }) => (
+              <BookOpen color={focused ? COLORS.accent.cyan : color} size={size} strokeWidth={focused ? 2.5 : 1.8} />
+            ),
+          }}
+        />
+      )}
       <Tab.Screen
         name="Advisor"
         component={AdvisorScreen}
