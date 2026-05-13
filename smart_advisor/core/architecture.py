@@ -53,7 +53,7 @@ class PrologAdapter(LogicEngineInterface):
         names:list[str]=[]
         for course in all_courses:
             names.append(f"'{course.name.lower()}'")
-            self.prolog_thread.assertz(f"difficulty('{course.name.lower()}',{course.DIFFICULTY_TO_PROLOG[course.difficulty]})")
+            self.prolog_thread.assertz(f"difficulty('{course.name.lower()}',{course.DIFFICULTY_TO_PROLOG[course.difficulty.lower()]})")
             self.prolog_thread.assertz(f"level('{course.name.lower()}',{course.level})")
             for prerequisite in course.prerequisites.all():
                 self.prolog_thread.assertz(f"prereq('{prerequisite.name.lower()}', '{course.name.lower()}')")
@@ -64,7 +64,7 @@ class PrologAdapter(LogicEngineInterface):
         
     def get_bestfit_course(self, student):
         self.prolog_thread.assertz(f"student_level({student.current_level})")
-        self.prolog_thread.assertz(f"student_pref_diff({student.DIFFICULTY_TO_PROLOG[student.preferred_difficulty]})")
+        self.prolog_thread.assertz(f"student_pref_diff({student.DIFFICULTY_TO_PROLOG[student.preferred_difficulty.lower()]})")
         for course in student.completed_courses.all():
             self.prolog_thread.assertz(f"taken('{course.name.lower()}')")
             #print(f"asserting taken: {course.name.lower()}")
