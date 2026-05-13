@@ -190,7 +190,7 @@ export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
             <Animated.View key={course.id} entering={FadeIn.delay(index * 50)}>
               <CourseRow
                 course={{ ...course, taken: isCourseTaken(course.id) }}
-                isPreferred={(state.currentStudent?.preferred_subjects || []).includes(course.id)}
+                isPreferred={(state.currentStudent?.preferred_subjects || []).includes(course.name.toLowerCase())}
                 readOnly={readOnly}
                 showStar={state.role === "student"}
                 onEdit={() => {
@@ -213,20 +213,19 @@ export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
                 onTogglePreferred={async () => {
                   if (!state.currentStudent) return;
                   // Optimistic UI update
-                  dispatch({ type: "TOGGLE_PREFERRED_COURSE", payload: course.id });
+                  dispatch({ type: "TOGGLE_PREFERRED_COURSE", payload: course.name.toLowerCase() });
                   try {
                     const res = await api.togglePreferredCourse(state.currentStudent.id, course.id);
                     if (res && res.status === "success") {
                       // Sync with server response
-                      const strIds = (res.preferred_subjects || []).map((id: any) => String(id));
                       dispatch({
                         type: "UPDATE_STUDENT",
-                        payload: { preferred_subjects: strIds },
+                        payload: { preferred_subjects: res.preferred_subjects || [] },
                       });
                     }
                   } catch (e) {
                     // Revert optimistic update on failure
-                    dispatch({ type: "TOGGLE_PREFERRED_COURSE", payload: course.id });
+                    dispatch({ type: "TOGGLE_PREFERRED_COURSE", payload: course.name.toLowerCase() });
                     console.error("Failed to toggle preferred:", e);
                   }
                 }}
