@@ -103,8 +103,8 @@ export function AdvisorScreen() {
       } else {
         setRecError(res.message || "Failed to generate plan");
       }
-    } catch (err) {
-      setRecError("Network error. Please try again.");
+    } catch (err:any) {
+      setRecError(err.message || "Network error. Please try again.");
     } finally {
       setLoadingRecs(false);
     }
@@ -255,14 +255,22 @@ export function AdvisorScreen() {
                   </Text>
                 </View>
               )}
-              {recError && (
-                <View style={styles.emptyState}>
-                  <Text style={{ color: COLORS.accent.rose, fontFamily: FONTS.medium, marginBottom: SPACING.md }}>{recError}</Text>
-                  <Pressable style={styles.primaryButton} onPress={fetchPlan}>
-                    <Text style={styles.primaryButtonText}>Try Again</Text>
-                  </Pressable>
-                </View>
-              )}
+{recError && (
+    <View style={styles.errorCard}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorTitle}>
+            {recError.includes("Cycle") ? "Prerequisite Cycle Detected" : "Something went wrong"}
+        </Text>
+        <Text style={styles.errorMessage}>
+            {recError.includes("Cycle")
+                ? "Your course prerequisites form a circular dependency. Please ask your admin to fix it."
+                : recError}
+        </Text>
+        <Pressable style={styles.primaryButton} onPress={() => fetchPlan()}>
+            <Text style={styles.primaryButtonText}>Try Again</Text>
+        </Pressable>
+    </View>
+)}
               {aiRecs.length > 0 && !loadingRecs && (
                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
@@ -486,4 +494,32 @@ const styles = StyleSheet.create({
   engineButtonTextActive: {
     color: COLORS.midnight.DEFAULT,
   },
+  errorCard: {
+    backgroundColor: COLORS.surface.dark,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.xl,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.accent.rose,
+    width: "100%",
+},
+errorIcon: {
+    fontSize: 40,
+    marginBottom: SPACING.md,
+},
+errorTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: FONT_SIZES.base,
+    color: COLORS.accent.rose,
+    marginBottom: SPACING.sm,
+    textAlign: "center",
+},
+errorMessage: {
+    fontFamily: FONTS.regular,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text.secondary,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: SPACING.xl,
+},
 });

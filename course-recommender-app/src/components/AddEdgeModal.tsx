@@ -61,7 +61,7 @@ export function AddEdgeModal({ visible, onClose, onSave, courses }: AddEdgeModal
     const selected = courses.find((c) => c.id === selectedId);
     const isOpen = expanded === key;
     const otherId = key === "from" ? toId : fromId;
-    const filtered = courses.filter((c) => c.id !== otherId);
+    const filtered = courses.filter((c) => c.id !== fromId && c.id !== toId);
 
     return (
       <View style={styles.pickerWrap}>
