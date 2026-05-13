@@ -21,14 +21,14 @@ class AIEngineAdapter(MasterAdvisorStrategy):
             for c in all_courses
         ]
 
-        # Pre-compute flags so Gemini doesn't have to guess
+        preferred_lower = [p.lower() for p in preferred_course_names]
         available_courses = [
             {
                 "name": c.name,
                 "level": c.level,
                 "difficulty": c.difficulty,
                 "prerequisites": [p.name for p in c.prerequisites.all()],
-                "is_preferred": c.name in preferred_course_names,
+                "is_preferred": c.name.lower() in preferred_lower,
                 "difficulty_matches": c.difficulty == preferred_difficulty
             }
             for c in all_courses
@@ -50,60 +50,74 @@ class AIEngineAdapter(MasterAdvisorStrategy):
         ctx = self._build_context(student, all_courses)
 
         prompt = f"""
-You are a university course advisor. Recommend courses the student can take immediately.
+You are a university course advisor. Follow these steps EXACTLY in order.
 
-STUDENT PROFILE:
-- Name: {ctx["student_name"]}
-- Current Level: {ctx["current_level"]}
-- Completed Courses: {ctx["completed_names"]}
+---
+STUDENT:
+- Level: {ctx["current_level"]}
+- Completed: {ctx["completed_names"]}
 - Preferred Subjects: {ctx["preferred_course_names"]}
 - Preferred Difficulty: {ctx["preferred_difficulty"]}
 
-TASK:
-1. From the available courses, keep only those where:
-   - level <= {ctx["current_level"]}
-   - ALL prerequisites are in the completed courses list.
-2. Each course already has two precomputed flags:
-   - "is_preferred": true if the course is in the student's preferred subjects.
-   - "difficulty_matches": true if the course difficulty matches the student's preferred difficulty.
-3. Assign a tier based on these flags:
-   - PLATINUM: is_preferred=true  AND difficulty_matches=true
-   - GOLD:     is_preferred=true  AND difficulty_matches=false
-   - SILVER:   is_preferred=false AND difficulty_matches=true
-   - BRONZE:   is_preferred=false AND difficulty_matches=false
-4. Sort output: PLATINUM first, then GOLD, SILVER, BRONZE.
-   Within the same tier, order does not matter.
+---
+STEP 1 — FILTER ELIGIBLE COURSES:
+Keep only courses where BOTH conditions are true:
+  A) course level <= {ctx["current_level"]}
+  B) every course in the prerequisites list is inside the student's completed list.
+Discard any course that fails either condition.
 
-IMPORTANT: Use ONLY the "is_preferred" and "difficulty_matches" flags for tiering.
-Do NOT re-evaluate or override them based on course names.
+STEP 2 — READ THE FLAGS:
+Each eligible course has two precomputed boolean flags:
+  - "is_preferred": already tells you if this course is a preferred subject. DO NOT re-evaluate this.
+  - "difficulty_matches": already tells you if the difficulty matches. DO NOT re-evaluate this.
 
+STEP 3 — ASSIGN TIER:
+Use ONLY the flags from Step 2:
+  - PLATINUM : is_preferred=true  AND difficulty_matches=true
+  - GOLD     : is_preferred=true  AND difficulty_matches=false
+  - SILVER   : is_preferred=false AND difficulty_matches=true
+  - BRONZE   : is_preferred=false AND difficulty_matches=false
+
+---
 AVAILABLE COURSES:
 {json.dumps(ctx["available_courses"], indent=2)}
 
-RESPONSE FORMAT (respond ONLY with valid JSON, no markdown, no extra text):
-{{
-  "recommendations": [
-    {{"name": "Course Name", "tier": "GOLD"}},
-    {{"name": "Next Course", "tier": "SILVER"}}
-  ]
-}}
+---
+Respond ONLY with a valid JSON array of course name strings. No markdown, no explanation.
+Example: ["Course A", "Course B", "Course C"]
 """
 
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
         )
-        raw_text = response.text.strip()
 
+        raw_text = response.text.strip()
         if raw_text.startswith("```"):
             raw_text = raw_text.split("```")[1]
             if raw_text.startswith("json"):
                 raw_text = raw_text[4:]
             raw_text = raw_text.strip()
 
-        data = json.loads(raw_text)
-        recommended_items = data.get("recommendations", [])
-        recommended_names = [item["name"] for item in recommended_items if isinstance(item, dict)]
+        eligible_names = json.loads(raw_text)
 
+        # Validate against actual DB courses
         all_course_names = {c.name for c in all_courses}
-        return [name for name in recommended_names if name in all_course_names]
+        eligible_names = [n for n in eligible_names if n in all_course_names]
+
+        # Python handles the deterministic tier sorting
+        course_flags = {c["name"]: c for c in ctx["available_courses"]}
+
+        print("Eligible from Gemini:", eligible_names)
+        print("Course flags:", json.dumps(course_flags, indent=2))
+
+        def tier(name):
+            c = course_flags.get(name, {})
+            is_preferred = c.get("is_preferred", False)
+            diff_matches = c.get("difficulty_matches", False)
+            if is_preferred and diff_matches:     return 0  # PLATINUM
+            if is_preferred and not diff_matches: return 1  # GOLD
+            if not is_preferred and diff_matches: return 2  # SILVER
+            return 3                                        # BRONZE
+
+        return sorted(eligible_names, key=tier)
