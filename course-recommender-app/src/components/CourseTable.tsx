@@ -132,7 +132,11 @@ export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
   const handleAddCourse = async (name: string, level: Course["level"], difficulty: Course["difficulty"]) => {
     try {
       if (editingCourse) {
-        const res = await api.updateCourse(editingCourse.id, { name, level, difficulty }, state.adminKey!);
+        const res = await api.updateCourse(editingCourse.id, {
+    name,
+    level,
+    difficulty: difficulty.toLowerCase().replace(" ", "_")
+}, state.adminKey!);
         if (res.status === "success") {
           dispatch({
             type: "UPDATE_COURSE",
@@ -140,7 +144,11 @@ export function CourseTable({ readOnly = false }: { readOnly?: boolean }) {
           });
         }
       } else {
-        const res = await api.createCourse({ name, level, difficulty }, state.adminKey!);
+        const res = await api.createCourse({
+    name,
+    level,
+    difficulty: difficulty.toLowerCase().replace(" ", "_")
+}, state.adminKey!);
         if (res.status === "success") {
           const newCourse: Course = {
             id: String(res.course.id),

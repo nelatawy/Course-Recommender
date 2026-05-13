@@ -5,6 +5,13 @@ import * as api from "../services/api";
 /*  Data Models                                                        */
 /* ------------------------------------------------------------------ */
 
+const BACKEND_TO_DIFFICULTY: Record<string, CourseDifficulty> = {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "very_hard": "Very Hard",
+};
+
 export type CourseDifficulty = "Easy" | "Medium" | "Hard" | "Very Hard";
 
 export interface Course {
@@ -125,9 +132,9 @@ function courseReducer(state: CourseState, action: CourseAction): CourseState {
 
     case "LOAD_DATA":
       // Re-apply local difficulties to loaded courses
-      const loadedCourses = action.payload.courses.map(c => ({
+          const loadedCourses = action.payload.courses.map(c => ({
         ...c,
-        difficulty: state.localDifficulties[c.id] || "Medium"
+        difficulty: state.localDifficulties[c.id] || c.difficulty
       }));
       return { ...state, courses: loadedCourses, edges: action.payload.edges };
 
@@ -242,7 +249,7 @@ export function CourseProvider({ children }: { children: ReactNode }) {
             courses: coursesRes.courses.map((c: any) => ({
               ...c,
               id: String(c.id),
-              difficulty: "Medium" // Default, overridden in reducer if local exists
+              difficulty: BACKEND_TO_DIFFICULTY[c.difficulty] || "Medium"
             })),
             edges: edgesRes.edges.map((e: any) => ({
               from: String(e.from),

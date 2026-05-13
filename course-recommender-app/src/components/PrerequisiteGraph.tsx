@@ -19,6 +19,7 @@ import {
 } from "../constants/theme";
 import { useCourseStore } from "../store/CourseContext";
 import { AddEdgeModal } from "./AddEdgeModal";
+import * as api from "../services/api";
 
 const NODE_WIDTH = 120;
 const NODE_HEIGHT = 40;
@@ -165,10 +166,17 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
     setNodePositions((prev) => ({ ...prev, [id]: { x, y } }));
   };
 
-  const handleAddEdge = (from: string, to: string) => {
-    dispatch({ type: "ADD_EDGE", payload: { from, to } });
+const handleAddEdge = async (from: string, to: string) => {
+    try {
+        const res = await api.addPrerequisite(from, to, state.adminKey!);
+        if (res.status === "success") {
+            dispatch({ type: "ADD_EDGE", payload: { from, to } });
+        }
+    } catch (e) {
+        console.error("Failed to add prerequisite:", e);
+    }
     setModalVisible(false);
-  };
+};
 
   const renderEdges = () => {
     return state.edges.map((edge) => {
@@ -253,7 +261,15 @@ export function PrerequisiteGraph({ readOnly = false }: { readOnly?: boolean }) 
                   containerHeight={containerSize.height}
                   onDrag={handleDrag}
                   readOnly={readOnly}
-                  onRemoveNode={(id) => dispatch({ type: "REMOVE_COURSE", payload: id })}
+                 onRemoveNode={async (id) => {
+    for (const edge of state.edges) {
+        if (edge.from === id || edge.to === id) {
+            await api.removePrerequisite(edge.from, edge.to, state.adminKey!);
+        }
+    }
+    await api.deleteCourse(id, state.adminKey!);
+    dispatch({ type: "REMOVE_COURSE", payload: id });
+}}
                 />
               );
             })}

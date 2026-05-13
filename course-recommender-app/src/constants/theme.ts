@@ -195,9 +195,15 @@ export const LEVEL_COLORS: Record<number, string> = {
 
 /** Colour assigned to each difficulty grade. */
 export const DIFFICULTY_COLORS: Record<string, string> = {
-  Easy: "#10B981",   // Emerald
-  Medium: "#F59E0B", // Amber
-  Hard: "#F43F5E",   // Rose
-  "Very Hard": "#9F1239", // Dark Rose
+    // Frontend values
+    Easy: "#10B981",
+    Medium: "#F59E0B",
+    Hard: "#F43F5E",
+    "Very Hard": "#9F1239",
+    // Backend values (lowercase)
+    easy: "#10B981",
+    medium: "#F59E0B",
+    hard: "#F43F5E",
+    very_hard: "#9F1239",
 } as const;
 
